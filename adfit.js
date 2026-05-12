@@ -3,12 +3,12 @@ const DESKTOP_AD_MIN_WIDTH = 728;
 const KAKAO_ADFIT_UNITS = {
   desktop: {
     height: "90",
-    unit: "DAN-i52lOpIZtyJYWndG",
+    unit: "",
     width: "728",
   },
   mobile: {
     height: "50",
-    unit: "DAN-ipLRVguTmHqe1KL5",
+    unit: "",
     width: "320",
   },
 };
@@ -34,11 +34,18 @@ function loadAdfitScript() {
 function renderAdfitBanner() {
   if (!adfitAnchor) return;
   const adUnit = currentAdfitUnit();
-  if (adUnit.unit === activeAdfitUnit) return;
-  activeAdfitUnit = adUnit.unit;
-
   adfitAnchor.style.setProperty("--adfit-height", `${adUnit.height}px`);
   adfitAnchor.style.setProperty("--adfit-width", `${adUnit.width}px`);
+
+  if (!adUnit.unit) {
+    adfitAnchor.hidden = true;
+    adfitAnchor.innerHTML = "";
+    return;
+  }
+
+  adfitAnchor.hidden = false;
+  if (adUnit.unit === activeAdfitUnit) return;
+  activeAdfitUnit = adUnit.unit;
   adfitAnchor.innerHTML = "";
 
   const frame = document.createElement("div");
