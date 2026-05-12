@@ -115,7 +115,8 @@ function makeHazards(total) {
       radius: 124,
       armWidth: 15,
       bladeCount: 2,
-      speed: 1.42,
+      clearancePadding: 3,
+      speed: 1.22,
       phase: 0.65,
     },
     {
@@ -125,7 +126,8 @@ function makeHazards(total) {
       radius: 124,
       armWidth: 15,
       bladeCount: 2,
-      speed: -1.47,
+      clearancePadding: 3,
+      speed: -1.26,
       phase: 1.2,
     },
     {
@@ -135,7 +137,8 @@ function makeHazards(total) {
       radius: 124,
       armWidth: 15,
       bladeCount: 2,
-      speed: 1.35,
+      clearancePadding: 3,
+      speed: 1.16,
       phase: 2.05,
     },
     {
@@ -145,7 +148,8 @@ function makeHazards(total) {
       radius: 124,
       armWidth: 15,
       bladeCount: 2,
-      speed: -1.41,
+      clearancePadding: 3,
+      speed: -1.21,
       phase: 2.75,
     },
   ];
@@ -453,11 +457,15 @@ function spinnerArms(hazard) {
   });
 }
 
+function spinnerCollisionRadius(hazard) {
+  return PIG_RADIUS + hazard.armWidth / 2 + (hazard.clearancePadding ?? 12);
+}
+
 function applySpinner(pig, hazard) {
   const arms = spinnerArms(hazard);
   for (let index = 0; index < arms.length; index += 1) {
     const arm = arms[index];
-    const hit = segmentCircle(arm.x1, arm.y1, arm.x2, arm.y2, pig.x, pig.y, PIG_RADIUS + hazard.armWidth / 2 + 12);
+    const hit = segmentCircle(arm.x1, arm.y1, arm.x2, arm.y2, pig.x, pig.y, spinnerCollisionRadius(hazard));
     if (!hit) continue;
 
     const normal = incomingNormal(pig, hit.nx, hit.ny);
@@ -494,7 +502,7 @@ function updateStuckOnSpinner(pig, dt) {
   const hazard = pig.stuckSpinner;
   const armIndex = pig.stuckArm;
   const arm = spinnerArms(hazard)[armIndex];
-  const hit = segmentCircle(arm.x1, arm.y1, arm.x2, arm.y2, pig.x, pig.y, PIG_RADIUS + hazard.armWidth / 2 + 12);
+  const hit = segmentCircle(arm.x1, arm.y1, arm.x2, arm.y2, pig.x, pig.y, spinnerCollisionRadius(hazard));
 
   if (!hit) {
     pig.stuckSpinner = null;
@@ -522,7 +530,7 @@ function updateStuckOnSpinner(pig, dt) {
 
 function keepPigOutsideSpinnerArm(pig, hazard, armIndex, fallbackNormal) {
   const arm = spinnerArms(hazard)[armIndex];
-  const hit = segmentCircle(arm.x1, arm.y1, arm.x2, arm.y2, pig.x, pig.y, PIG_RADIUS + hazard.armWidth / 2 + 12);
+  const hit = segmentCircle(arm.x1, arm.y1, arm.x2, arm.y2, pig.x, pig.y, spinnerCollisionRadius(hazard));
   if (!hit) return;
   const normal = incomingNormal(pig, hit.nx || fallbackNormal.nx, hit.ny || fallbackNormal.ny);
   pig.x += normal.nx * Math.max(hit.overlap + 6, 6);
@@ -678,8 +686,8 @@ function courseFenceSegments() {
     { x1: x + w, y1: center, x2: x, y2: center + h },
     { x1: x, y1: center + h, x2: x - w, y2: center },
     { x1: x - w, y1: center, x2: x, y2: center - h },
-    { x1: rightTip + 22, y1: center - 205, x2: FUNNEL_END_X, y2: center - CORRIDOR_HALF },
-    { x1: rightTip + 22, y1: center + 205, x2: FUNNEL_END_X, y2: center + CORRIDOR_HALF },
+    { x1: rightTip, y1: center - 205, x2: FUNNEL_END_X, y2: center - CORRIDOR_HALF },
+    { x1: rightTip, y1: center + 205, x2: FUNNEL_END_X, y2: center + CORRIDOR_HALF },
     { x1: FUNNEL_END_X, y1: center - CORRIDOR_HALF, x2: corridorEnd, y2: center - CORRIDOR_HALF },
     { x1: FUNNEL_END_X, y1: center + CORRIDOR_HALF, x2: corridorEnd, y2: center + CORRIDOR_HALF },
   ];
@@ -700,6 +708,38 @@ function applyCourseFences(pig, prevX, prevY) {
     pig.flipTimer = Math.max(pig.flipTimer, 0.12);
     if (pig.eventTimer < 0.18) event(pig, "울타리 막힘", "#d7a76b");
   }
+  applyDiamondInteriorBlock(pig);
+}
+
+function applyDiamondInteriorBlock(pig) {
+  const dx = Math.abs(pig.x - DIAMOND_X) / DIAMOND_W;
+  const dy = Math.abs(pig.y - COURSE_CENTER) / DIAMOND_H;
+  if (dx + dy > 0.98) return;
+
+  let closest = null;
+  for (const fence of courseFenceSegments().slice(0, 4)) {
+    const vx = fence.x2 - fence.x1;
+    const vy = fence.y2 - fence.y1;
+    const lenSq = vx * vx + vy * vy;
+    const t = Math.max(0, Math.min(1, ((pig.x - fence.x1) * vx + (pig.y - fence.y1) * vy) / lenSq));
+    const px = fence.x1 + vx * t;
+    const py = fence.y1 + vy * t;
+    const awayX = pig.x - px;
+    const awayY = pig.y - py;
+    const distance = Math.hypot(awayX, awayY) || 1;
+    if (!closest || distance < closest.distance) {
+      closest = { distance, nx: -awayX / distance, ny: -awayY / distance };
+    }
+  }
+
+  if (!closest) return;
+  const push = closest.distance + PIG_RADIUS + 18;
+  pig.x += closest.nx * push;
+  pig.y += closest.ny * push;
+  reflectPig(pig, closest.nx, closest.ny, 0.52);
+  pig.recoilTimer = Math.max(pig.recoilTimer, 0.18);
+  pig.flipTimer = Math.max(pig.flipTimer, 0.18);
+  if (pig.eventTimer < 0.18) event(pig, "마름모 울타리", "#d7a76b");
 }
 
 function rouletteWallSegments() {
@@ -819,12 +859,12 @@ function drawDiamondField() {
   ctx.save();
   ctx.fillStyle = "rgba(116, 194, 94, 0.42)";
   ctx.beginPath();
-  ctx.moveTo(rightTip + 8, center - 205);
+  ctx.moveTo(rightTip, center - 205);
   ctx.lineTo(FUNNEL_END_X, center - CORRIDOR_HALF);
   ctx.lineTo(corridorEnd, center - CORRIDOR_HALF);
   ctx.lineTo(corridorEnd, center + CORRIDOR_HALF);
   ctx.lineTo(FUNNEL_END_X, center + CORRIDOR_HALF);
-  ctx.lineTo(rightTip + 8, center + 205);
+  ctx.lineTo(rightTip, center + 205);
   ctx.closePath();
   ctx.fill();
 
