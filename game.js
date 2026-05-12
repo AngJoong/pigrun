@@ -254,6 +254,8 @@ function updatePig(pig, dt) {
   }
   pig.tilt += ((pig.recoilTimer > 0 ? Math.sign(pig.vy || 1) * 0.34 : 0) - pig.tilt) * Math.min(1, dt * 8);
 
+  const prevX = pig.x;
+  const prevY = pig.y;
   pig.x += pig.vx * dt;
   pig.y += pig.vy * dt;
   if (pig.y < TRACK_TOP + 34) {
@@ -269,7 +271,7 @@ function updatePig(pig, dt) {
     startRoll(pig, { nx: 0, ny: -1 }, 0.35);
   }
 
-  applyCourseFences(pig);
+  applyCourseFences(pig, prevX, prevY);
   for (const hazard of hazards) applyHazard(pig, hazard);
 }
 
@@ -595,6 +597,43 @@ function segmentCircle(x1, y1, x2, y2, cx, cy, radius) {
   };
 }
 
+function segmentIntersectionT(ax, ay, bx, by, cx, cy, dx, dy) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const cdx = dx - cx;
+  const cdy = dy - cy;
+  const denom = abx * cdy - aby * cdx;
+  if (Math.abs(denom) < 0.0001) return null;
+
+  const acx = cx - ax;
+  const acy = cy - ay;
+  const t = (acx * cdy - acy * cdx) / denom;
+  const u = (acx * aby - acy * abx) / denom;
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+  return t;
+}
+
+function sweptFenceHit(fence, pig, prevX, prevY, radius) {
+  if (prevX === undefined || prevY === undefined) return null;
+  const t = segmentIntersectionT(prevX, prevY, pig.x, pig.y, fence.x1, fence.y1, fence.x2, fence.y2);
+  if (t === null) return null;
+
+  const moveX = pig.x - prevX;
+  const moveY = pig.y - prevY;
+  const fenceX = fence.x2 - fence.x1;
+  const fenceY = fence.y2 - fence.y1;
+  const fenceLength = Math.hypot(fenceX, fenceY) || 1;
+  const n1 = { nx: -fenceY / fenceLength, ny: fenceX / fenceLength };
+  const n2 = { nx: -n1.nx, ny: -n1.ny };
+  const normal = moveX * n1.nx + moveY * n1.ny < 0 ? n1 : n2;
+  const hitX = prevX + moveX * t;
+  const hitY = prevY + moveY * t;
+
+  pig.x = hitX + normal.nx * (radius + 3);
+  pig.y = hitY + normal.ny * (radius + 3);
+  return { nx: normal.nx, ny: normal.ny, overlap: 3 };
+}
+
 function reflectPig(pig, nx, ny, restitution) {
   const dot = pig.vx * nx + pig.vy * ny;
   if (dot >= 0) return;
@@ -646,14 +685,19 @@ function courseFenceSegments() {
   ];
 }
 
-function applyCourseFences(pig) {
+function applyCourseFences(pig, prevX, prevY) {
   for (const fence of courseFenceSegments()) {
-    if (pig.x < Math.min(fence.x1, fence.x2) - 70 || pig.x > Math.max(fence.x1, fence.x2) + 70) continue;
-    const hit = segmentCircle(fence.x1, fence.y1, fence.x2, fence.y2, pig.x, pig.y, PIG_RADIUS + 10);
+    const minX = Math.min(fence.x1, fence.x2, prevX ?? pig.x) - 86;
+    const maxX = Math.max(fence.x1, fence.x2, prevX ?? pig.x) + 86;
+    if (pig.x < minX || pig.x > maxX) continue;
+    const fenceRadius = PIG_RADIUS + 16;
+    const hit =
+      sweptFenceHit(fence, pig, prevX, prevY, fenceRadius) ||
+      segmentCircle(fence.x1, fence.y1, fence.x2, fence.y2, pig.x, pig.y, fenceRadius);
     if (!hit) continue;
-    applySolidImpact(pig, hit, 0.72, 22);
-    pig.recoilTimer = Math.max(pig.recoilTimer, 0.08);
-    pig.flipTimer = Math.max(pig.flipTimer, 0.08);
+    applySolidImpact(pig, hit, 0.66, 36);
+    pig.recoilTimer = Math.max(pig.recoilTimer, 0.12);
+    pig.flipTimer = Math.max(pig.flipTimer, 0.12);
     if (pig.eventTimer < 0.18) event(pig, "울타리 막힘", "#d7a76b");
   }
 }
