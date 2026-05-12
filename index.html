@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pig Run Pinball Derby</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <section class="race-shell">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Pig Run</p>
+            <h1>돼지 핀볼 더비</h1>
+          </div>
+          <div class="race-status" id="raceStatus">1등할 돼지를 고르세요</div>
+        </header>
+
+        <canvas id="raceCanvas" width="1280" height="720" aria-label="자동 돼지 레이스"></canvas>
+
+        <div class="controls">
+          <section class="panel pick-panel">
+            <div class="panel-head">
+              <h2>우승 예측</h2>
+              <button id="sampleBtn" type="button">섞기</button>
+            </div>
+            <div id="pickList" class="pick-list"></div>
+          </section>
+
+          <section class="panel board-panel">
+            <div class="panel-head">
+              <h2>순위</h2>
+              <span id="raceClock">00.0s</span>
+            </div>
+            <ol id="leaderboard" class="leaderboard"></ol>
+          </section>
+
+          <div class="actions">
+            <button id="startBtn" class="primary" type="button">출발</button>
+            <button id="resetBtn" type="button">리셋</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js?v=20260510-wide-first-slow-gates"></script>
+  </body>
+</html>
