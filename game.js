@@ -13,7 +13,7 @@ const W = canvas.width;
 const H = canvas.height;
 const TRACK_TOP = 150;
 const TRACK_BOTTOM = H - 86;
-const WORLD_WIDTH = 3450;
+const WORLD_WIDTH = 6400;
 const START_X = 92;
 const FINISH_X = WORLD_WIDTH - 170;
 const PIG_RADIUS = 32;
@@ -23,6 +23,12 @@ const DIAMOND_W = 250;
 const DIAMOND_H = 155;
 const FUNNEL_END_X = 1735;
 const CORRIDOR_HALF = 58;
+const BOTTLENECK_END_X = 2860;
+const MAZE_START_X = 3160;
+const MAZE_END_X = 4240;
+const CHOICE_START_X = 4380;
+const CHOICE_END_X = 5260;
+const FINAL_GATE_X = 5750;
 
 const names = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
 const pigColors = ["#eec0bd", "#f1aaa9", "#f3c7c2", "#e9a6b5", "#f0bbb2", "#efb3c4"];
@@ -152,6 +158,14 @@ function makeHazards(total) {
       speed: -1.21,
       phase: 2.75,
     },
+    { type: "mud", x: 4580, y: COURSE_CENTER - 125, r: 42, usedBy: new Set() },
+    { type: "mud", x: 4820, y: COURSE_CENTER - 118, r: 38, usedBy: new Set() },
+    { type: "feed", x: 4720, y: COURSE_CENTER + 128, r: 34, usedBy: new Set() },
+    { type: "feed", x: 5000, y: COURSE_CENTER + 116, r: 34, usedBy: new Set() },
+    { type: "spring", x: 5000, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
+    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER - 130, phase: 0.2, usedBy: new Set() },
+    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
+    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER + 130, phase: 3.1, usedBy: new Set() },
   ];
 }
 
@@ -306,9 +320,34 @@ function chooseTargetY(pig) {
     return clampTrackY(sideY + (center - sideY) * t + pig.routeOffset * 0.15);
   }
 
-  if (pig.x >= FUNNEL_END_X && pig.x < 2850) {
+  if (pig.x >= FUNNEL_END_X && pig.x < BOTTLENECK_END_X) {
     const wiggle = Math.sin((pig.x - FUNNEL_END_X) / 180 + pig.index) * 13;
     return clampTrackY(center + wiggle + pig.routeOffset * 0.18);
+  }
+
+  if (pig.x >= BOTTLENECK_END_X && pig.x < MAZE_START_X) {
+    return clampTrackY(center - 120 + pig.routeOffset * 0.2);
+  }
+
+  if (pig.x >= MAZE_START_X && pig.x < MAZE_END_X) {
+    if (pig.x < MAZE_START_X + 275) return clampTrackY(center - 148 + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 645) return clampTrackY(center + 146 + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 930) return clampTrackY(center - 132 + pig.routeOffset * 0.18);
+    return clampTrackY(center + pig.routeOffset * 0.25);
+  }
+
+  if (pig.x >= CHOICE_START_X && pig.x < CHOICE_END_X) {
+    const choice = pig.index % 3;
+    if (choice === 0) return clampTrackY(center - 126 + pig.routeOffset * 0.25);
+    if (choice === 1) return clampTrackY(center + pig.routeOffset * 0.35);
+    return clampTrackY(center + 126 + pig.routeOffset * 0.25);
+  }
+
+  if (pig.x >= CHOICE_END_X && pig.x < FINAL_GATE_X + 180) {
+    const gateLane = (pig.index + Math.floor(elapsed * 0.18)) % 3;
+    if (gateLane === 0) return clampTrackY(center - 130 + pig.routeOffset * 0.15);
+    if (gateLane === 1) return clampTrackY(center + pig.routeOffset * 0.2);
+    return clampTrackY(center + 130 + pig.routeOffset * 0.15);
   }
 
   return clampTrackY(center + pig.routeOffset);
@@ -680,7 +719,10 @@ function courseFenceSegments() {
   const w = DIAMOND_W;
   const h = DIAMOND_H;
   const rightTip = x + w;
-  const corridorEnd = FINISH_X - 150;
+  const corridorEnd = BOTTLENECK_END_X;
+  const mazeTop = TRACK_TOP + 58;
+  const mazeBottom = TRACK_BOTTOM - 58;
+  const mazeCenter = center;
   return [
     { x1: x, y1: center - h, x2: x + w, y2: center },
     { x1: x + w, y1: center, x2: x, y2: center + h },
@@ -690,6 +732,13 @@ function courseFenceSegments() {
     { x1: rightTip, y1: center + 205, x2: FUNNEL_END_X, y2: center + CORRIDOR_HALF },
     { x1: FUNNEL_END_X, y1: center - CORRIDOR_HALF, x2: corridorEnd, y2: center - CORRIDOR_HALF },
     { x1: FUNNEL_END_X, y1: center + CORRIDOR_HALF, x2: corridorEnd, y2: center + CORRIDOR_HALF },
+    { x1: MAZE_START_X, y1: mazeTop, x2: MAZE_END_X, y2: mazeTop },
+    { x1: MAZE_START_X, y1: mazeBottom, x2: MAZE_END_X, y2: mazeBottom },
+    { x1: MAZE_START_X + 230, y1: mazeCenter - 48, x2: MAZE_START_X + 230, y2: mazeBottom },
+    { x1: MAZE_START_X + 560, y1: mazeTop, x2: MAZE_START_X + 560, y2: mazeCenter + 48 },
+    { x1: MAZE_START_X + 870, y1: mazeCenter - 48, x2: MAZE_START_X + 870, y2: mazeBottom },
+    { x1: FINAL_GATE_X - 120, y1: center - 76, x2: FINAL_GATE_X + 120, y2: center - 76 },
+    { x1: FINAL_GATE_X - 120, y1: center + 76, x2: FINAL_GATE_X + 120, y2: center + 76 },
   ];
 }
 
@@ -845,6 +894,7 @@ function drawWorld() {
 
   drawBarn(142, 38);
   drawDiamondField();
+  drawExtendedCourseFields();
   drawCourseFences();
   drawFinishLine();
 }
@@ -855,7 +905,7 @@ function drawDiamondField() {
   const w = DIAMOND_W;
   const h = DIAMOND_H;
   const rightTip = x + w;
-  const corridorEnd = FINISH_X - 150;
+  const corridorEnd = BOTTLENECK_END_X;
   ctx.save();
   ctx.fillStyle = "rgba(116, 194, 94, 0.42)";
   ctx.beginPath();
@@ -876,6 +926,46 @@ function drawDiamondField() {
   ctx.lineTo(x - w + 16, center);
   ctx.closePath();
   ctx.fill();
+  ctx.restore();
+}
+
+function drawExtendedCourseFields() {
+  const center = COURSE_CENTER;
+  ctx.save();
+
+  ctx.fillStyle = "rgba(104, 184, 86, 0.42)";
+  roundRect(MAZE_START_X - 28, TRACK_TOP + 52, MAZE_END_X - MAZE_START_X + 56, TRACK_BOTTOM - TRACK_TOP - 104, 8);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+  ctx.beginPath();
+  ctx.moveTo(MAZE_START_X + 40, center - 142);
+  ctx.bezierCurveTo(MAZE_START_X + 300, center - 160, MAZE_START_X + 330, center + 144, MAZE_START_X + 535, center + 144);
+  ctx.bezierCurveTo(MAZE_START_X + 790, center + 144, MAZE_START_X + 705, center - 130, MAZE_START_X + 965, center - 120);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.32)";
+  ctx.lineWidth = 54;
+  ctx.lineCap = "round";
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(116, 194, 94, 0.36)";
+  roundRect(CHOICE_START_X, TRACK_TOP + 56, CHOICE_END_X - CHOICE_START_X, TRACK_BOTTOM - TRACK_TOP - 112, 8);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255,255,255,0.42)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([14, 14]);
+  ctx.beginPath();
+  ctx.moveTo(CHOICE_START_X + 30, center - 72);
+  ctx.lineTo(CHOICE_END_X - 30, center - 72);
+  ctx.moveTo(CHOICE_START_X + 30, center + 72);
+  ctx.lineTo(CHOICE_END_X - 30, center + 72);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "rgba(255, 248, 207, 0.34)";
+  roundRect(FINAL_GATE_X - 165, center - 190, 330, 380, 8);
+  ctx.fill();
+
   ctx.restore();
 }
 
