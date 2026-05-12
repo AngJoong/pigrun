@@ -16,7 +16,8 @@ const TRACK_BOTTOM = H - 86;
 const WORLD_WIDTH = 6400;
 const START_X = 92;
 const FINISH_X = WORLD_WIDTH - 170;
-const PIG_RADIUS = 32;
+const PIG_RADIUS = 25;
+const PIG_DRAW_SCALE = 0.82;
 const COURSE_CENTER = (TRACK_TOP + TRACK_BOTTOM) / 2;
 const DIAMOND_X = 1260;
 const DIAMOND_W = 250;
@@ -1317,7 +1318,7 @@ function drawPig(pig) {
   ctx.save();
   ctx.translate(pig.x, y);
   ctx.rotate(rolling ? pig.rollAngle : pushing ? pig.pushAngle * 0.18 : pig.tilt + (pig.flipTimer > 0 ? Math.sin(pig.spin) * 0.18 : 0));
-  ctx.scale(1.04 * stretch, squash);
+  ctx.scale(PIG_DRAW_SCALE * 1.04 * stretch, PIG_DRAW_SCALE * squash);
 
   ctx.strokeStyle = "#d99797";
   ctx.lineWidth = 7;
