@@ -112,6 +112,23 @@ canvas {
   background: var(--grass);
 }
 
+.adfit-anchor {
+  display: grid;
+  place-items: center;
+  min-height: var(--adfit-height, 90px);
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  background: #fffdfb;
+}
+
+.adfit-frame {
+  display: grid;
+  place-items: center;
+  width: min(var(--adfit-width, 728px), calc(100vw - 52px));
+  min-height: var(--adfit-height, 90px);
+  overflow: hidden;
+}
+
 .controls {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) minmax(280px, 1.05fr) auto;
