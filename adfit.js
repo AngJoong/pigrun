@@ -1,14 +1,20 @@
 const KAKAO_ADFIT_SCRIPT_SRC = "https://t1.kakaocdn.net/kas/static/ba.min.js";
 const DESKTOP_AD_MIN_WIDTH = 728;
+const RECTANGLE_AD_MIN_WIDTH = 300;
 const KAKAO_ADFIT_UNITS = {
   desktop: {
     height: "90",
-    unit: "",
+    unit: "DAN-UZ0VyY6u64YsKmMn",
     width: "728",
+  },
+  rectangle: {
+    height: "250",
+    unit: "DAN-rWHu8GKMJuI1lweK",
+    width: "300",
   },
   mobile: {
     height: "50",
-    unit: "",
+    unit: "DAN-MPx8onlVDAQHZ7Gz",
     width: "320",
   },
 };
@@ -19,7 +25,9 @@ let adfitScript = null;
 
 function currentAdfitUnit() {
   const width = adfitAnchor?.getBoundingClientRect().width || window.innerWidth;
-  return width >= DESKTOP_AD_MIN_WIDTH ? KAKAO_ADFIT_UNITS.desktop : KAKAO_ADFIT_UNITS.mobile;
+  if (width >= DESKTOP_AD_MIN_WIDTH) return KAKAO_ADFIT_UNITS.desktop;
+  if (width >= RECTANGLE_AD_MIN_WIDTH) return KAKAO_ADFIT_UNITS.rectangle;
+  return KAKAO_ADFIT_UNITS.mobile;
 }
 
 function loadAdfitScript() {
