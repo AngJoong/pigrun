@@ -4,15 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>돼지 핀볼</title>
-    <meta name="description" content="1등할 돼지를 고르는 자동 돼지 핀볼 레이스">
+    <meta name="description" content="각자 돼지를 출전시켜 1등을 겨루는 자동 돼지 핀볼 레이스">
     <meta property="og:title" content="돼지 핀볼">
-    <meta property="og:description" content="1등할 돼지를 고르고 회전문 코스를 달리는 자동 돼지 레이스">
+    <meta property="og:description" content="각자 돼지를 출전시키고 회전문 코스를 달리는 자동 돼지 레이스">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pigrun.antabear.com/">
     <meta property="og:image" content="https://pigrun.antabear.com/thumbnail.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="돼지 핀볼">
-    <meta name="twitter:description" content="1등할 돼지를 고르고 회전문 코스를 달리는 자동 돼지 레이스">
+    <meta name="twitter:description" content="각자 돼지를 출전시키고 회전문 코스를 달리는 자동 돼지 레이스">
     <meta name="twitter:image" content="https://pigrun.antabear.com/thumbnail.png">
     <link rel="stylesheet" href="styles.css">
   </head>
@@ -24,7 +24,7 @@
             <p class="eyebrow">Pig Run</p>
             <h1>돼지 핀볼</h1>
           </div>
-          <div class="race-status" id="raceStatus">1등할 돼지를 고르세요</div>
+          <div class="race-status" id="raceStatus">출전 돼지를 정하고 출발하세요</div>
         </header>
 
         <canvas id="raceCanvas" width="1280" height="720" aria-label="자동 돼지 레이스"></canvas>
@@ -35,17 +35,12 @@
           <section class="panel roster-panel">
             <div class="panel-head">
               <h2>출전 돼지</h2>
-              <button id="applyNamesBtn" type="button">적용</button>
+              <div class="panel-actions">
+                <button id="sampleBtn" type="button">섞기</button>
+                <button id="applyNamesBtn" type="button">적용</button>
+              </div>
             </div>
             <textarea id="nameInput" rows="3" spellcheck="false"></textarea>
-          </section>
-
-          <section class="panel pick-panel">
-            <div class="panel-head">
-              <h2>우승 예측</h2>
-              <button id="sampleBtn" type="button">섞기</button>
-            </div>
-            <div id="pickList" class="pick-list"></div>
           </section>
 
           <section class="panel board-panel">
@@ -65,7 +60,7 @@
     </main>
 
     <script src="adfit.js?v=20260512-pigrun-adfit"></script>
-    <script src="game.js?v=20260514-auto-roster"></script>
+    <script src="game.js?v=20260514-owner-race"></script>
     <script defer src="/_vercel/insights/script.js"></script>
   </body>
 </html>

@@ -1,7 +1,6 @@
 const canvas = document.querySelector("#raceCanvas");
 const ctx = canvas.getContext("2d");
 
-const pickList = document.querySelector("#pickList");
 const startBtn = document.querySelector("#startBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const sampleBtn = document.querySelector("#sampleBtn");
@@ -43,7 +42,6 @@ let pigs = [];
 let hazards = [];
 let particles = [];
 let roster = [];
-let selectedPigId = "";
 let raceState = "idle";
 let winner = null;
 let elapsed = 0;
@@ -227,31 +225,12 @@ function setupRace(keepSelection = true) {
   elapsed = 0;
   cameraX = 0;
   raceState = "idle";
-  selectedPigId = order.some((entry) => entry.id === selectedPigId) ? selectedPigId : order[0]?.id || "";
-  raceStatus.textContent = "1등할 돼지를 고르세요";
+  raceStatus.textContent = "출전 돼지를 정하고 출발하세요";
   raceClock.textContent = "00.0s";
   startBtn.disabled = false;
   sampleBtn.disabled = false;
-  renderPickList();
   updateLeaderboard();
   draw();
-}
-
-function renderPickList() {
-  pickList.innerHTML = "";
-  for (const pig of pigs) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = pig.id === selectedPigId ? "selected" : "";
-    button.textContent = `${pig.bib}번 ${pig.label}`;
-    button.addEventListener("click", () => {
-      if (raceState === "running") return;
-      selectedPigId = pig.id;
-      raceStatus.textContent = `${pig.label} 우승에 걸었습니다`;
-      renderPickList();
-    });
-    pickList.append(button);
-  }
 }
 
 function startRace() {
@@ -263,8 +242,7 @@ function startRace() {
   sampleBtn.disabled = true;
   applyNamesBtn.disabled = true;
   nameInput.disabled = true;
-  const selected = pigs.find((pig) => pig.id === selectedPigId);
-  raceStatus.textContent = `${selected?.label || "돼지"} 선택, 출발`;
+  raceStatus.textContent = `${pigs.length}마리 출발`;
 }
 
 function update(dt) {
@@ -894,8 +872,7 @@ function checkWinner() {
   sampleBtn.disabled = false;
   applyNamesBtn.disabled = false;
   nameInput.disabled = false;
-  const hit = winner.id === selectedPigId;
-  raceStatus.textContent = hit ? `${winner.label} 적중` : `${winner.label} 우승, 예측 실패`;
+  raceStatus.textContent = `${winner.label} 우승`;
 }
 
 function updateLeaderboard() {
@@ -903,9 +880,8 @@ function updateLeaderboard() {
   leaderboard.innerHTML = "";
   ordered.forEach((pig) => {
     const li = document.createElement("li");
-    const mark = pig.id === selectedPigId ? "선택 " : "";
     const distance = Math.max(0, FINISH_X - pig.x);
-    li.textContent = `${mark}${pig.bib}번 ${pig.label} · ${Math.round(distance)}m`;
+    li.textContent = `${pig.bib}번 ${pig.label} · ${Math.round(distance)}m`;
     leaderboard.append(li);
   });
 }
@@ -919,7 +895,6 @@ function draw() {
   for (const pig of pigs) drawPig(pig);
   drawParticles();
   ctx.restore();
-  drawOverlay();
 }
 
 function drawWorld() {
@@ -1545,19 +1520,6 @@ function drawParticles() {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
-}
-
-function drawOverlay() {
-  const chosen = pigs.find((pig) => pig.id === selectedPigId);
-  if (!chosen) return;
-  ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.fillRect(18, 18, 236, 46);
-  ctx.strokeStyle = "#e1d0c6";
-  ctx.strokeRect(18, 18, 236, 46);
-  ctx.fillStyle = "#4d3434";
-  ctx.font = "900 17px system-ui";
-  ctx.textAlign = "left";
-  ctx.fillText(`내 선택: ${chosen.bib}번 ${chosen.label}`, 34, 47);
 }
 
 function burst(x, y, color, count) {
