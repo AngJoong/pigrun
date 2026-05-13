@@ -33,7 +33,7 @@ const CHOICE_START_X = 4380;
 const CHOICE_END_X = 5260;
 const FINAL_GATE_X = 5750;
 
-const defaultNameInput = "세중x2\n남영\n정필x3";
+const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
 const fallbackNames = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
 const pigColors = ["#eec0bd", "#f1aaa9", "#f3c7c2", "#e9a6b5", "#f0bbb2", "#efb3c4"];
 const earColors = ["#e8818a", "#e67586", "#ed9299", "#d96b86", "#e98a83", "#de7898"];
@@ -50,6 +50,7 @@ let elapsed = 0;
 let cameraX = 0;
 let lastTime = 0;
 let animationId = 0;
+let rosterInputTimer = 0;
 
 function randomRange(min, max) {
   return min + Math.random() * (max - min);
@@ -92,6 +93,12 @@ function applyRosterFromInput() {
   if (raceState === "running") return;
   roster = parseRosterInput(nameInput.value || defaultNameInput);
   setupRace(true);
+}
+
+function scheduleRosterApply() {
+  if (raceState === "running") return;
+  clearTimeout(rosterInputTimer);
+  rosterInputTimer = setTimeout(applyRosterFromInput, 450);
 }
 
 function laneBounds(index, total) {
@@ -1590,6 +1597,7 @@ startBtn.addEventListener("click", startRace);
 resetBtn.addEventListener("click", () => setupRace(true));
 sampleBtn.addEventListener("click", () => setupRace(false));
 applyNamesBtn.addEventListener("click", applyRosterFromInput);
+nameInput.addEventListener("input", scheduleRosterApply);
 
 nameInput.value = nameInput.value.trim() || defaultNameInput;
 roster = parseRosterInput(nameInput.value);
