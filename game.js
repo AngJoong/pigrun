@@ -5,6 +5,8 @@ const pickList = document.querySelector("#pickList");
 const startBtn = document.querySelector("#startBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const sampleBtn = document.querySelector("#sampleBtn");
+const applyNamesBtn = document.querySelector("#applyNamesBtn");
+const nameInput = document.querySelector("#nameInput");
 const raceStatus = document.querySelector("#raceStatus");
 const leaderboard = document.querySelector("#leaderboard");
 const raceClock = document.querySelector("#raceClock");
@@ -31,7 +33,8 @@ const CHOICE_START_X = 4380;
 const CHOICE_END_X = 5260;
 const FINAL_GATE_X = 5750;
 
-const names = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
+const defaultNameInput = "세중x2\n남영\n정필x3";
+const fallbackNames = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
 const pigColors = ["#eec0bd", "#f1aaa9", "#f3c7c2", "#e9a6b5", "#f0bbb2", "#efb3c4"];
 const earColors = ["#e8818a", "#e67586", "#ed9299", "#d96b86", "#e98a83", "#de7898"];
 const laneColors = ["#86df69", "#78d65c", "#91e576", "#7ddc62", "#88e06d", "#73d258"];
@@ -39,7 +42,8 @@ const laneColors = ["#86df69", "#78d65c", "#91e576", "#7ddc62", "#88e06d", "#73d
 let pigs = [];
 let hazards = [];
 let particles = [];
-let selectedPig = names[0];
+let roster = [];
+let selectedPigId = "";
 let raceState = "idle";
 let winner = null;
 let elapsed = 0;
@@ -55,16 +59,53 @@ function shuffle(list) {
   return [...list].sort(() => Math.random() - 0.5);
 }
 
+function parseRosterInput(value) {
+  const parts = value
+    .split(/[\n,]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const parsed = [];
+
+  for (const part of parts) {
+    const match = part.match(/^(.+?)(?:\s*[xX×*]\s*(\d+))?$/);
+    const rawName = (match?.[1] || part).trim();
+    const name = rawName.replace(/\s+/g, " ").slice(0, 10);
+    const count = Math.max(1, Math.min(12, Number(match?.[2] || 1)));
+    if (!name) continue;
+    for (let i = 0; i < count; i += 1) parsed.push(name);
+  }
+
+  const names = parsed.length ? parsed : fallbackNames;
+  const totals = names.reduce((acc, name) => {
+    acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {});
+  const seen = {};
+  return names.slice(0, 12).map((name, index) => {
+    seen[name] = (seen[name] || 0) + 1;
+    const label = totals[name] > 1 ? `${name} ${seen[name]}` : name;
+    return { id: `${index}-${name}-${seen[name]}`, name, label };
+  });
+}
+
+function applyRosterFromInput() {
+  if (raceState === "running") return;
+  roster = parseRosterInput(nameInput.value || defaultNameInput);
+  setupRace(true);
+}
+
 function laneBounds(index, total) {
   const height = (TRACK_BOTTOM - TRACK_TOP) / total;
   const top = TRACK_TOP + index * height;
   return { top, bottom: top + height, center: top + height / 2, height };
 }
 
-function buildPig(name, index, total) {
+function buildPig(entry, index, total) {
   const lane = laneBounds(index, total);
   return {
-    name,
+    id: entry.id,
+    name: entry.name,
+    label: entry.label,
     index,
     x: START_X,
     y: lane.center + 12,
@@ -171,15 +212,15 @@ function makeHazards(total) {
 }
 
 function setupRace(keepSelection = true) {
-  const order = keepSelection ? names : shuffle(names);
-  pigs = order.map((name, index) => buildPig(name, index, order.length));
+  const order = keepSelection ? roster : shuffle(roster);
+  pigs = order.map((entry, index) => buildPig(entry, index, order.length));
   hazards = makeHazards(pigs.length);
   particles = [];
   winner = null;
   elapsed = 0;
   cameraX = 0;
   raceState = "idle";
-  selectedPig = order.includes(selectedPig) ? selectedPig : order[0];
+  selectedPigId = order.some((entry) => entry.id === selectedPigId) ? selectedPigId : order[0]?.id || "";
   raceStatus.textContent = "1등할 돼지를 고르세요";
   raceClock.textContent = "00.0s";
   startBtn.disabled = false;
@@ -194,12 +235,12 @@ function renderPickList() {
   for (const pig of pigs) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = pig.name === selectedPig ? "selected" : "";
-    button.textContent = `${pig.bib}번 ${pig.name}`;
+    button.className = pig.id === selectedPigId ? "selected" : "";
+    button.textContent = `${pig.bib}번 ${pig.label}`;
     button.addEventListener("click", () => {
       if (raceState === "running") return;
-      selectedPig = pig.name;
-      raceStatus.textContent = `${pig.name} 우승에 걸었습니다`;
+      selectedPigId = pig.id;
+      raceStatus.textContent = `${pig.label} 우승에 걸었습니다`;
       renderPickList();
     });
     pickList.append(button);
@@ -213,7 +254,10 @@ function startRace() {
   raceState = "running";
   startBtn.disabled = true;
   sampleBtn.disabled = true;
-  raceStatus.textContent = `${selectedPig} 선택, 출발`;
+  applyNamesBtn.disabled = true;
+  nameInput.disabled = true;
+  const selected = pigs.find((pig) => pig.id === selectedPigId);
+  raceStatus.textContent = `${selected?.label || "돼지"} 선택, 출발`;
 }
 
 function update(dt) {
@@ -382,8 +426,8 @@ function applyHazard(pig, hazard) {
   if (hazard.type === "gate") {
     const segment = gateSegment(hazard);
     if (isGateOpen(hazard)) {
-      if (!hazard.usedBy.has(pig.name) && Math.abs(pig.x - hazard.x) < 26) {
-        hazard.usedBy.add(pig.name);
+      if (!hazard.usedBy.has(pig.id) && Math.abs(pig.x - hazard.x) < 26) {
+        hazard.usedBy.add(pig.id);
         pig.vx += randomRange(55, 120);
         event(pig, "열림 통과", "#ffffff");
       }
@@ -402,14 +446,14 @@ function applyHazard(pig, hazard) {
     return;
   }
 
-  if (hazard.usedBy.has(pig.name)) return;
+  if (hazard.usedBy.has(pig.id)) return;
 
   const dx = pig.x - hazard.x;
   const dy = pig.y - hazard.y;
   const dist = Math.hypot(dx, dy);
   if (dist > hazard.r + 32) return;
 
-  hazard.usedBy.add(pig.name);
+  hazard.usedBy.add(pig.id);
   const nx = dx / (dist || 1);
   const ny = dy / (dist || 1);
   const hit = { nx, ny, overlap: hazard.r + 32 - dist };
@@ -841,8 +885,10 @@ function checkWinner() {
   raceState = "finished";
   startBtn.disabled = false;
   sampleBtn.disabled = false;
-  const hit = winner.name === selectedPig;
-  raceStatus.textContent = hit ? `${winner.name} 적중` : `${winner.name} 우승, 예측 실패`;
+  applyNamesBtn.disabled = false;
+  nameInput.disabled = false;
+  const hit = winner.id === selectedPigId;
+  raceStatus.textContent = hit ? `${winner.label} 적중` : `${winner.label} 우승, 예측 실패`;
 }
 
 function updateLeaderboard() {
@@ -850,9 +896,9 @@ function updateLeaderboard() {
   leaderboard.innerHTML = "";
   ordered.forEach((pig) => {
     const li = document.createElement("li");
-    const mark = pig.name === selectedPig ? "선택 " : "";
+    const mark = pig.id === selectedPigId ? "선택 " : "";
     const distance = Math.max(0, FINISH_X - pig.x);
-    li.textContent = `${mark}${pig.bib}번 ${pig.name} · ${Math.round(distance)}m`;
+    li.textContent = `${mark}${pig.bib}번 ${pig.label} · ${Math.round(distance)}m`;
     leaderboard.append(li);
   });
 }
@@ -1459,7 +1505,7 @@ function drawPig(pig) {
   ctx.fillStyle = "#2f2425";
   ctx.font = "800 14px system-ui";
   ctx.textAlign = "center";
-  ctx.fillText(pig.name, pig.x, y - 38);
+  ctx.fillText(pig.label, pig.x, y - 38);
 
   if (pig.eventTimer > 0) {
     ctx.globalAlpha = Math.min(1, pig.eventTimer * 1.6);
@@ -1495,7 +1541,7 @@ function drawParticles() {
 }
 
 function drawOverlay() {
-  const chosen = pigs.find((pig) => pig.name === selectedPig);
+  const chosen = pigs.find((pig) => pig.id === selectedPigId);
   if (!chosen) return;
   ctx.fillStyle = "rgba(255,255,255,0.82)";
   ctx.fillRect(18, 18, 236, 46);
@@ -1504,7 +1550,7 @@ function drawOverlay() {
   ctx.fillStyle = "#4d3434";
   ctx.font = "900 17px system-ui";
   ctx.textAlign = "left";
-  ctx.fillText(`내 선택: ${chosen.bib}번 ${chosen.name}`, 34, 47);
+  ctx.fillText(`내 선택: ${chosen.bib}번 ${chosen.label}`, 34, 47);
 }
 
 function burst(x, y, color, count) {
@@ -1543,7 +1589,10 @@ function loop(time) {
 startBtn.addEventListener("click", startRace);
 resetBtn.addEventListener("click", () => setupRace(true));
 sampleBtn.addEventListener("click", () => setupRace(false));
+applyNamesBtn.addEventListener("click", applyRosterFromInput);
 
+nameInput.value = nameInput.value.trim() || defaultNameInput;
+roster = parseRosterInput(nameInput.value);
 setupRace(true);
 cancelAnimationFrame(animationId);
 animationId = requestAnimationFrame(loop);

@@ -131,7 +131,7 @@ canvas {
 
 .controls {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1.05fr) auto;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(260px, 1fr) minmax(260px, 1fr) auto;
   gap: 12px;
   padding: 14px;
   border-top: 1px solid var(--line);
@@ -155,6 +155,25 @@ canvas {
 
 .panel-head button {
   padding: 7px 10px;
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 128px;
+  resize: vertical;
+  border: 1px solid #ead8ce;
+  border-radius: 8px;
+  padding: 10px 11px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+textarea:disabled {
+  opacity: 0.58;
 }
 
 .pick-list {
