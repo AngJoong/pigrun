@@ -37,14 +37,18 @@ const MAZE_END_X = 5200;
 const CHOICE_START_X = 5460;
 const CHOICE_END_X = 6900;
 const FINAL_GATE_X = 7480;
+const SECTION_COUNT = 6;
+const SECTION_START_X = START_X;
+const SECTION_END_X = FINISH_X;
+const SECTION_WIDTH = (SECTION_END_X - SECTION_START_X) / SECTION_COUNT;
 
 const trackSections = {
-  giantWindmill: { name: "대왕풍차", startX: 430, endX: 1120 },
-  diamondJunction: { name: "마름모 교차로", startX: DIAMOND_X - DIAMOND_W, endX: FUNNEL_END_X },
-  zigzagWindmills: { name: "지그재그 풍차", startX: FUNNEL_END_X, endX: BOTTLENECK_END_X },
-  mazePath: { name: "울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
-  splitLanes: { name: "삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
-  finalGates: { name: "결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
+  giantWindmill: sectionBounds(0, "1구간 대왕풍차"),
+  zigzagWindmills: sectionBounds(1, "2구간 지그재그 풍차"),
+  mazePath: sectionBounds(2, "3구간 울타리 미로"),
+  transitionRun: sectionBounds(3, "4구간 전환 질주"),
+  splitLanes: sectionBounds(4, "5구간 삼갈래 선택길"),
+  finalGates: sectionBounds(5, "6구간 결승 게이트"),
 };
 
 const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
@@ -70,6 +74,12 @@ const isTestMode = new URLSearchParams(window.location.search).get("test") === "
 
 function randomRange(min, max) {
   return min + Math.random() * (max - min);
+}
+
+function sectionBounds(index, name) {
+  const startX = SECTION_START_X + SECTION_WIDTH * index;
+  const endX = index === SECTION_COUNT - 1 ? SECTION_END_X : startX + SECTION_WIDTH;
+  return { name, index: index + 1, startX, endX, width: endX - startX };
 }
 
 function shuffle(list) {
