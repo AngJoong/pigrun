@@ -34,7 +34,7 @@ const ZIGZAG_FENCE_WIDTH = 18;
 const ZIGZAG_PASSAGE_HEIGHT = (ZIGZAG_FIELD_BOTTOM - ZIGZAG_FIELD_TOP - ZIGZAG_FENCE_WIDTH * 2) / 3;
 const ZIGZAG_DIVIDER_OFFSET = ZIGZAG_PASSAGE_HEIGHT / 2 + ZIGZAG_FENCE_WIDTH / 2;
 const ZIGZAG_LANE_OFFSET = ZIGZAG_PASSAGE_HEIGHT + ZIGZAG_FENCE_WIDTH;
-const ZIGZAG_WINDMILL_RADIUS = 132;
+const ZIGZAG_WINDMILL_RADIUS = 140;
 const DIAMOND_X = 1250;
 const DIAMOND_W = 232;
 const DIAMOND_H = 185;
@@ -896,12 +896,14 @@ function applyDiamondInteriorBlock(pig) {
   }
 
   if (!closest) return;
-  const push = closest.distance + PIG_RADIUS + 18;
+  const push = closest.distance + PIG_RADIUS + 30;
   pig.x += closest.nx * push;
   pig.y += closest.ny * push;
-  reflectPig(pig, closest.nx, closest.ny, 0.52);
-  pig.recoilTimer = Math.max(pig.recoilTimer, 0.18);
-  pig.flipTimer = Math.max(pig.flipTimer, 0.18);
+  reflectPig(pig, closest.nx, closest.ny, 0.7);
+  pig.vx = Math.max(pig.vx, pig.baseSpeed * 0.72);
+  pig.vy += closest.ny * 55;
+  pig.recoilTimer = Math.max(pig.recoilTimer, 0.12);
+  pig.flipTimer = Math.max(pig.flipTimer, 0.14);
   if (pig.eventTimer < 0.18) event(pig, "마름모 울타리", "#d7a76b");
 }
 
