@@ -79,6 +79,7 @@ const testSection = isTestMode ? trackSections[testSectionKey] : null;
 const testInsertLength = testSection ? testSection.endX - testSection.startX : 0;
 const testInsertEndX = TEST_INSERT_X + testInsertLength;
 const testInsertShift = testSection ? TEST_INSERT_X - testSection.startX : 0;
+const testModeLabel = testSection ? `${testMode || testSectionKey} · ${testSection.name}` : testMode ? `${testMode} · unknown` : "grid";
 
 const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
 const fallbackNames = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
@@ -1057,6 +1058,7 @@ function draw() {
   for (const pig of pigs) drawPig(pig);
   drawParticles();
   ctx.restore();
+  drawTestModeHud();
 }
 
 function drawWorld() {
@@ -1090,6 +1092,28 @@ function drawWorld() {
   drawCourseFences();
   drawSectionGuides();
   drawFinishLine();
+}
+
+function drawTestModeHud() {
+  if (!isTestMode) return;
+
+  const label = `TEST MODE: ${testModeLabel}`;
+  ctx.save();
+  ctx.font = "900 16px system-ui";
+  const width = Math.ceil(ctx.measureText(label).width) + 26;
+  const x = W - width - 16;
+  const y = 14;
+  ctx.fillStyle = "rgba(255, 253, 246, 0.92)";
+  roundRect(x, y, width, 34, 8);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(20, 81, 57, 0.48)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = "#145139";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + 13, y + 17);
+  ctx.restore();
 }
 
 function drawSectionGuides() {
