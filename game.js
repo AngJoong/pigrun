@@ -49,6 +49,7 @@ const CHOICE_END_X = 7000;
 const FINAL_GATE_X = 7500;
 const COURSE_UNIT_WIDTH = 100;
 const MAJOR_UNIT_EVERY = 5;
+const TEST_INSERT_X = START_X;
 
 const trackSections = {
   giantWindmill: { name: "대왕풍차", startX: 500, endX: 1000 },
@@ -58,6 +59,26 @@ const trackSections = {
   splitLanes: { name: "삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
   finalGates: { name: "결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
 };
+
+const searchParams = new URLSearchParams(window.location.search);
+const isTestMode = searchParams.get("test") === "1";
+const testMode = searchParams.get("mode") || "";
+const sectionAliases = {
+  twin: "giantWindmill",
+  windmill: "giantWindmill",
+  giant: "giantWindmill",
+  diamond: "diamondJunction",
+  zigzag: "zigzagWindmills",
+  maze: "mazePath",
+  split: "splitLanes",
+  gate: "finalGates",
+  final: "finalGates",
+};
+const testSectionKey = sectionAliases[testMode] || testMode;
+const testSection = isTestMode ? trackSections[testSectionKey] : null;
+const testInsertLength = testSection ? testSection.endX - testSection.startX : 0;
+const testInsertEndX = TEST_INSERT_X + testInsertLength;
+const testInsertShift = testSection ? TEST_INSERT_X - testSection.startX : 0;
 
 const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
 const fallbackNames = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
@@ -77,11 +98,30 @@ let lastTime = 0;
 let animationId = 0;
 let rosterInputTimer = 0;
 
-const isTestMode = new URLSearchParams(window.location.search).get("test") === "1";
 let showSectionGuides = isTestMode;
 
 function randomRange(min, max) {
   return min + Math.random() * (max - min);
+}
+
+function isInTestInsert(x) {
+  return Boolean(testSection && x >= TEST_INSERT_X && x < testInsertEndX);
+}
+
+function toSourceX(x) {
+  return isInTestInsert(x) ? x - testInsertShift : x;
+}
+
+function shiftedSegment(segment, shift) {
+  return { ...segment, x1: segment.x1 + shift, x2: segment.x2 + shift };
+}
+
+function shiftedHazard(hazard, shift) {
+  return { ...hazard, x: hazard.x + shift, usedBy: hazard.usedBy instanceof Set ? new Set() : hazard.usedBy };
+}
+
+function isOriginalRangeVisible(startX, endX) {
+  return !testSection || startX > testInsertEndX + 120 || endX < TEST_INSERT_X - 120;
 }
 
 function shuffle(list) {
@@ -181,7 +221,7 @@ function buildPig(entry, index, total) {
   };
 }
 
-function makeHazards(total) {
+function baseHazards() {
   return [
     {
       type: "spinner",
@@ -304,6 +344,17 @@ function makeHazards(total) {
   ];
 }
 
+function makeHazards(total) {
+  const normalHazards = baseHazards();
+  if (!testSection) return normalHazards;
+
+  const inserted = normalHazards
+    .filter((hazard) => hazard.section === testSectionKey)
+    .map((hazard) => shiftedHazard(hazard, testInsertShift));
+  const visibleNormal = normalHazards.filter((hazard) => hazard.x > testInsertEndX + 120);
+  return [...inserted, ...visibleNormal];
+}
+
 function setupRace(keepSelection = true) {
   const order = keepSelection ? roster : shuffle(roster);
   pigs = order.map((entry, index) => buildPig(entry, index, order.length));
@@ -414,62 +465,63 @@ function updatePig(pig, dt) {
 
 function chooseTargetY(pig) {
   const center = COURSE_CENTER;
+  const x = toSourceX(pig.x);
   const upper = center - OUTER_ROUTE_OFFSET + pig.routeOffset;
   const lower = center + OUTER_ROUTE_OFFSET + pig.routeOffset;
 
-  if (pig.diamondAvoidTimer > 0 && pig.x < FUNNEL_END_X) {
+  if (pig.diamondAvoidTimer > 0 && x < FUNNEL_END_X) {
     return clampTrackY(pig.diamondAvoidY);
   }
 
-  if (pig.x > trackSections.giantWindmill.startX - 120 && pig.x < trackSections.giantWindmill.endX + 120) {
-    const wiggle = Math.sin((pig.x - trackSections.giantWindmill.startX) / 135 + pig.index) * 18;
+  if (x > trackSections.giantWindmill.startX - 120 && x < trackSections.giantWindmill.endX + 120) {
+    const wiggle = Math.sin((x - trackSections.giantWindmill.startX) / 135 + pig.index) * 18;
     return clampTrackY(center + wiggle + pig.routeOffset * 0.18);
   }
 
-  if (pig.x > DIAMOND_X - 420 && pig.x < DIAMOND_X + DIAMOND_W + 70) {
-    if (pig.x < DIAMOND_X - 300 && Math.abs(pig.y - center) < 120) {
+  if (x > DIAMOND_X - 420 && x < DIAMOND_X + DIAMOND_W + 70) {
+    if (x < DIAMOND_X - 300 && Math.abs(pig.y - center) < 120) {
       pig.routeSide = pig.y < center ? -1 : 1;
     }
     return clampTrackY(pig.routeSide < 0 ? upper : lower);
   }
 
   const funnelStart = DIAMOND_X + DIAMOND_W;
-  if (pig.x >= funnelStart && pig.x < FUNNEL_END_X) {
-    const t = Math.max(0, Math.min(1, (pig.x - funnelStart) / (FUNNEL_END_X - funnelStart)));
+  if (x >= funnelStart && x < FUNNEL_END_X) {
+    const t = Math.max(0, Math.min(1, (x - funnelStart) / (FUNNEL_END_X - funnelStart)));
     const sideY = pig.routeSide < 0 ? upper : lower;
     return clampTrackY(sideY + (center - sideY) * t + pig.routeOffset * 0.15);
   }
 
-  if (pig.x >= FUNNEL_END_X && pig.x < ZIGZAG_START_X) {
+  if (x >= FUNNEL_END_X && x < ZIGZAG_START_X) {
     return clampTrackY(center + pig.routeOffset * 0.35);
   }
 
-  if (pig.x >= ZIGZAG_START_X && pig.x < BOTTLENECK_END_X) {
+  if (x >= ZIGZAG_START_X && x < BOTTLENECK_END_X) {
     const lane = pig.index % 3;
     const laneY = lane === 0 ? center - ZIGZAG_LANE_OFFSET : lane === 1 ? center : center + ZIGZAG_LANE_OFFSET;
-    const wiggle = Math.sin((pig.x - ZIGZAG_START_X) / 170 + pig.index) * 10;
+    const wiggle = Math.sin((x - ZIGZAG_START_X) / 170 + pig.index) * 10;
     return clampTrackY(laneY + wiggle + pig.routeOffset * 0.12);
   }
 
-  if (pig.x >= BOTTLENECK_END_X && pig.x < MAZE_START_X) {
+  if (x >= BOTTLENECK_END_X && x < MAZE_START_X) {
     return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.85 + pig.routeOffset * 0.2);
   }
 
-  if (pig.x >= MAZE_START_X && pig.x < MAZE_END_X) {
-    if (pig.x < MAZE_START_X + 500) return clampTrackY(center - MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
-    if (pig.x < MAZE_START_X + 1000) return clampTrackY(center + MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
-    if (pig.x < MAZE_START_X + 1250) return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.9 + pig.routeOffset * 0.18);
+  if (x >= MAZE_START_X && x < MAZE_END_X) {
+    if (x < MAZE_START_X + 500) return clampTrackY(center - MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
+    if (x < MAZE_START_X + 1000) return clampTrackY(center + MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
+    if (x < MAZE_START_X + 1250) return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.9 + pig.routeOffset * 0.18);
     return clampTrackY(center + pig.routeOffset * 0.25);
   }
 
-  if (pig.x >= CHOICE_START_X && pig.x < CHOICE_END_X) {
+  if (x >= CHOICE_START_X && x < CHOICE_END_X) {
     const choice = pig.index % 3;
     if (choice === 0) return clampTrackY(center - CHOICE_ROUTE_OFFSET + pig.routeOffset * 0.25);
     if (choice === 1) return clampTrackY(center + pig.routeOffset * 0.35);
     return clampTrackY(center + CHOICE_ROUTE_OFFSET + pig.routeOffset * 0.25);
   }
 
-  if (pig.x >= CHOICE_END_X && pig.x < FINAL_GATE_X + 180) {
+  if (x >= CHOICE_END_X && x < FINAL_GATE_X + 180) {
     const gateLane = (pig.index + Math.floor(elapsed * 0.18)) % 3;
     if (gateLane === 0) return clampTrackY(center - FINAL_GATE_OFFSET + pig.routeOffset * 0.15);
     if (gateLane === 1) return clampTrackY(center + pig.routeOffset * 0.2);
@@ -847,7 +899,7 @@ function courseFenceSegments() {
   const mazeTop = TRACK_TOP + 58;
   const mazeBottom = TRACK_BOTTOM - 58;
   const mazeCenter = center;
-  return [
+  const segments = [
     { x1: x, y1: center - h, x2: x + w, y2: center },
     { x1: x + w, y1: center, x2: x, y2: center + h },
     { x1: x, y1: center + h, x2: x - w, y2: center },
@@ -861,6 +913,17 @@ function courseFenceSegments() {
     { x1: FINAL_GATE_X - 120, y1: center - 96, x2: FINAL_GATE_X + 120, y2: center - 96 },
     { x1: FINAL_GATE_X - 120, y1: center + 96, x2: FINAL_GATE_X + 120, y2: center + 96 },
   ];
+  if (!testSection) return segments;
+
+  const inserted = segments
+    .filter((segment) => {
+      const minX = Math.min(segment.x1, segment.x2);
+      const maxX = Math.max(segment.x1, segment.x2);
+      return minX >= testSection.startX - 1 && maxX <= testSection.endX + 1;
+    })
+    .map((segment) => shiftedSegment(segment, testInsertShift));
+  const visibleNormal = segments.filter((segment) => Math.min(segment.x1, segment.x2) > testInsertEndX + 120);
+  return [...inserted, ...visibleNormal];
 }
 
 function applyCourseFences(pig, prevX, prevY) {
@@ -882,7 +945,8 @@ function applyCourseFences(pig, prevX, prevY) {
 }
 
 function applyDiamondInteriorBlock(pig) {
-  const dx = Math.abs(pig.x - DIAMOND_X) / DIAMOND_W;
+  const sourceX = toSourceX(pig.x);
+  const dx = Math.abs(sourceX - DIAMOND_X) / DIAMOND_W;
   const dy = Math.abs(pig.y - COURSE_CENTER) / DIAMOND_H;
   if (dx + dy > 0.98) return;
 
@@ -1020,6 +1084,7 @@ function drawWorld() {
   }
 
   drawBarn(142, 38);
+  drawInsertedTestSection();
   drawDiamondField();
   drawExtendedCourseFields();
   drawCourseFences();
@@ -1058,24 +1123,65 @@ function drawSectionGuides() {
   ctx.restore();
 }
 
+function drawInsertedTestSection() {
+  if (!testSection) return;
+
+  ctx.save();
+  if (testSectionKey === "zigzagWindmills") {
+    ctx.fillStyle = "rgba(116, 194, 94, 0.42)";
+    roundRect(TEST_INSERT_X, ZIGZAG_FIELD_TOP, testInsertLength, ZIGZAG_FIELD_BOTTOM - ZIGZAG_FIELD_TOP, 8);
+    ctx.fill();
+  }
+
+  if (testSectionKey === "diamondJunction") {
+    const center = COURSE_CENTER;
+    const x = DIAMOND_X + testInsertShift;
+    ctx.fillStyle = "rgba(116, 194, 94, 0.64)";
+    ctx.beginPath();
+    ctx.moveTo(x, center - DIAMOND_H + 10);
+    ctx.lineTo(x + DIAMOND_W - 16, center);
+    ctx.lineTo(x, center + DIAMOND_H - 10);
+    ctx.lineTo(x - DIAMOND_W + 16, center);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if (testSectionKey === "mazePath") {
+    ctx.fillStyle = "rgba(104, 184, 86, 0.42)";
+    roundRect(TEST_INSERT_X, TRACK_TOP + 52, testInsertLength, TRACK_BOTTOM - TRACK_TOP - 104, 8);
+    ctx.fill();
+  }
+
+  if (testSectionKey === "splitLanes") {
+    ctx.fillStyle = "rgba(116, 194, 94, 0.36)";
+    roundRect(TEST_INSERT_X, TRACK_TOP + 56, testInsertLength, TRACK_BOTTOM - TRACK_TOP - 112, 8);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawDiamondField() {
   const center = COURSE_CENTER;
   const x = DIAMOND_X;
   const w = DIAMOND_W;
   const h = DIAMOND_H;
   ctx.save();
-  ctx.fillStyle = "rgba(116, 194, 94, 0.42)";
-  roundRect(ZIGZAG_START_X, ZIGZAG_FIELD_TOP, BOTTLENECK_END_X - ZIGZAG_START_X, ZIGZAG_FIELD_BOTTOM - ZIGZAG_FIELD_TOP, 8);
-  ctx.fill();
+  if (isOriginalRangeVisible(ZIGZAG_START_X, BOTTLENECK_END_X)) {
+    ctx.fillStyle = "rgba(116, 194, 94, 0.42)";
+    roundRect(ZIGZAG_START_X, ZIGZAG_FIELD_TOP, BOTTLENECK_END_X - ZIGZAG_START_X, ZIGZAG_FIELD_BOTTOM - ZIGZAG_FIELD_TOP, 8);
+    ctx.fill();
+  }
 
-  ctx.fillStyle = "rgba(116, 194, 94, 0.64)";
-  ctx.beginPath();
-  ctx.moveTo(x, center - h + 10);
-  ctx.lineTo(x + w - 16, center);
-  ctx.lineTo(x, center + h - 10);
-  ctx.lineTo(x - w + 16, center);
-  ctx.closePath();
-  ctx.fill();
+  if (isOriginalRangeVisible(DIAMOND_X - DIAMOND_W, DIAMOND_X + DIAMOND_W)) {
+    ctx.fillStyle = "rgba(116, 194, 94, 0.64)";
+    ctx.beginPath();
+    ctx.moveTo(x, center - h + 10);
+    ctx.lineTo(x + w - 16, center);
+    ctx.lineTo(x, center + h - 10);
+    ctx.lineTo(x - w + 16, center);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }
 
