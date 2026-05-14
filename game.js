@@ -15,9 +15,9 @@ const W = canvas.width;
 const H = canvas.height;
 const TRACK_TOP = 96;
 const TRACK_BOTTOM = H - 48;
-const WORLD_WIDTH = 8200;
-const START_X = 92;
-const FINISH_X = WORLD_WIDTH - 170;
+const WORLD_WIDTH = 8500;
+const START_X = 100;
+const FINISH_X = 8000;
 const PIG_RADIUS = 25;
 const PIG_DRAW_SCALE = 0.82;
 const COURSE_CENTER = (TRACK_TOP + TRACK_BOTTOM) / 2;
@@ -26,22 +26,22 @@ const OUTER_ROUTE_OFFSET = 185;
 const CHOICE_ROUTE_OFFSET = 170;
 const FINAL_GATE_OFFSET = 165;
 const MAZE_ROUTE_OFFSET = 176;
-const DIAMOND_X = 1260;
+const DIAMOND_X = 1500;
 const DIAMOND_W = 250;
 const DIAMOND_H = 185;
-const FUNNEL_END_X = 1735;
+const FUNNEL_END_X = 2000;
 const CORRIDOR_HALF = 66;
-const BOTTLENECK_END_X = 2860;
-const MAZE_START_X = 3740;
-const MAZE_END_X = 5200;
-const CHOICE_START_X = 5460;
-const CHOICE_END_X = 6900;
-const FINAL_GATE_X = 7480;
+const BOTTLENECK_END_X = 3500;
+const MAZE_START_X = 4000;
+const MAZE_END_X = 5500;
+const CHOICE_START_X = 6000;
+const CHOICE_END_X = 7000;
+const FINAL_GATE_X = 7500;
 const COURSE_UNIT_WIDTH = 100;
 const MAJOR_UNIT_EVERY = 5;
 
 const trackSections = {
-  giantWindmill: { name: "대왕풍차", startX: 430, endX: 1120 },
+  giantWindmill: { name: "대왕풍차", startX: 500, endX: 1500 },
   zigzagWindmills: { name: "지그재그 풍차", startX: FUNNEL_END_X, endX: BOTTLENECK_END_X },
   mazePath: { name: "울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
   splitLanes: { name: "삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
@@ -173,7 +173,7 @@ function makeHazards(total) {
     {
       type: "spinner",
       section: "giantWindmill",
-      x: 760,
+      x: 1000,
       y: COURSE_CENTER,
       radius: 236,
       armWidth: 18,
@@ -184,7 +184,7 @@ function makeHazards(total) {
     {
       type: "spinner",
       section: "zigzagWindmills",
-      x: 1845,
+      x: 2000,
       y: COURSE_CENTER - CORRIDOR_HALF - 64,
       radius: 124,
       armWidth: 15,
@@ -196,7 +196,7 @@ function makeHazards(total) {
     {
       type: "spinner",
       section: "zigzagWindmills",
-      x: 2105,
+      x: 2500,
       y: COURSE_CENTER + CORRIDOR_HALF + 64,
       radius: 124,
       armWidth: 15,
@@ -208,7 +208,7 @@ function makeHazards(total) {
     {
       type: "spinner",
       section: "zigzagWindmills",
-      x: 2365,
+      x: 3000,
       y: COURSE_CENTER - CORRIDOR_HALF - 64,
       radius: 124,
       armWidth: 15,
@@ -220,7 +220,7 @@ function makeHazards(total) {
     {
       type: "spinner",
       section: "zigzagWindmills",
-      x: 2625,
+      x: 3500,
       y: COURSE_CENTER + CORRIDOR_HALF + 64,
       radius: 124,
       armWidth: 15,
@@ -232,7 +232,7 @@ function makeHazards(total) {
     {
       type: "mud",
       section: "splitLanes",
-      x: CHOICE_START_X + 260,
+      x: 6000,
       y: COURSE_CENTER - CHOICE_ROUTE_OFFSET,
       r: 42,
       usedBy: new Set(),
@@ -240,7 +240,7 @@ function makeHazards(total) {
     {
       type: "mud",
       section: "splitLanes",
-      x: CHOICE_START_X + 620,
+      x: 6500,
       y: COURSE_CENTER - CHOICE_ROUTE_OFFSET + 16,
       r: 38,
       usedBy: new Set(),
@@ -248,7 +248,7 @@ function makeHazards(total) {
     {
       type: "feed",
       section: "splitLanes",
-      x: CHOICE_START_X + 420,
+      x: 6000,
       y: COURSE_CENTER + CHOICE_ROUTE_OFFSET,
       r: 34,
       usedBy: new Set(),
@@ -256,12 +256,12 @@ function makeHazards(total) {
     {
       type: "feed",
       section: "splitLanes",
-      x: CHOICE_START_X + 900,
+      x: 6500,
       y: COURSE_CENTER + CHOICE_ROUTE_OFFSET - 14,
       r: 34,
       usedBy: new Set(),
     },
-    { type: "spring", section: "splitLanes", x: CHOICE_START_X + 880, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
+    { type: "spring", section: "splitLanes", x: 6500, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
     { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER - FINAL_GATE_OFFSET, phase: 0.2, usedBy: new Set() },
     { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
     { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER + FINAL_GATE_OFFSET, phase: 3.1, usedBy: new Set() },
@@ -412,9 +412,9 @@ function chooseTargetY(pig) {
   }
 
   if (pig.x >= MAZE_START_X && pig.x < MAZE_END_X) {
-    if (pig.x < MAZE_START_X + 275) return clampTrackY(center - MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
-    if (pig.x < MAZE_START_X + 645) return clampTrackY(center + MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
-    if (pig.x < MAZE_START_X + 930) return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.9 + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 500) return clampTrackY(center - MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 1000) return clampTrackY(center + MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 1250) return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.9 + pig.routeOffset * 0.18);
     return clampTrackY(center + pig.routeOffset * 0.25);
   }
 
@@ -816,9 +816,8 @@ function courseFenceSegments() {
     { x1: FUNNEL_END_X, y1: center + CORRIDOR_HALF, x2: corridorEnd, y2: center + CORRIDOR_HALF },
     { x1: MAZE_START_X, y1: mazeTop, x2: MAZE_END_X, y2: mazeTop },
     { x1: MAZE_START_X, y1: mazeBottom, x2: MAZE_END_X, y2: mazeBottom },
-    { x1: MAZE_START_X + 230, y1: mazeCenter - 60, x2: MAZE_START_X + 230, y2: mazeBottom },
-    { x1: MAZE_START_X + 560, y1: mazeTop, x2: MAZE_START_X + 560, y2: mazeCenter + 60 },
-    { x1: MAZE_START_X + 870, y1: mazeCenter - 60, x2: MAZE_START_X + 870, y2: mazeBottom },
+    { x1: MAZE_START_X + 500, y1: mazeCenter - 60, x2: MAZE_START_X + 500, y2: mazeBottom },
+    { x1: MAZE_START_X + 1000, y1: mazeTop, x2: MAZE_START_X + 1000, y2: mazeCenter + 60 },
     { x1: FINAL_GATE_X - 120, y1: center - 96, x2: FINAL_GATE_X + 120, y2: center - 96 },
     { x1: FINAL_GATE_X - 120, y1: center + 96, x2: FINAL_GATE_X + 120, y2: center + 96 },
   ];
