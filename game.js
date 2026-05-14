@@ -20,11 +20,16 @@ const FINISH_X = WORLD_WIDTH - 170;
 const PIG_RADIUS = 25;
 const PIG_DRAW_SCALE = 0.82;
 const COURSE_CENTER = (TRACK_TOP + TRACK_BOTTOM) / 2;
+const GUIDE_LANE_COUNT = 10;
+const OUTER_ROUTE_OFFSET = 185;
+const CHOICE_ROUTE_OFFSET = 170;
+const FINAL_GATE_OFFSET = 165;
+const MAZE_ROUTE_OFFSET = 176;
 const DIAMOND_X = 1260;
 const DIAMOND_W = 250;
-const DIAMOND_H = 155;
+const DIAMOND_H = 185;
 const FUNNEL_END_X = 1735;
-const CORRIDOR_HALF = 58;
+const CORRIDOR_HALF = 66;
 const BOTTLENECK_END_X = 2860;
 const MAZE_START_X = 3740;
 const MAZE_END_X = 5200;
@@ -205,14 +210,14 @@ function makeHazards(total) {
       speed: -1.21,
       phase: 2.75,
     },
-    { type: "mud", x: CHOICE_START_X + 260, y: COURSE_CENTER - 125, r: 42, usedBy: new Set() },
-    { type: "mud", x: CHOICE_START_X + 620, y: COURSE_CENTER - 118, r: 38, usedBy: new Set() },
-    { type: "feed", x: CHOICE_START_X + 420, y: COURSE_CENTER + 128, r: 34, usedBy: new Set() },
-    { type: "feed", x: CHOICE_START_X + 900, y: COURSE_CENTER + 116, r: 34, usedBy: new Set() },
+    { type: "mud", x: CHOICE_START_X + 260, y: COURSE_CENTER - CHOICE_ROUTE_OFFSET, r: 42, usedBy: new Set() },
+    { type: "mud", x: CHOICE_START_X + 620, y: COURSE_CENTER - CHOICE_ROUTE_OFFSET + 16, r: 38, usedBy: new Set() },
+    { type: "feed", x: CHOICE_START_X + 420, y: COURSE_CENTER + CHOICE_ROUTE_OFFSET, r: 34, usedBy: new Set() },
+    { type: "feed", x: CHOICE_START_X + 900, y: COURSE_CENTER + CHOICE_ROUTE_OFFSET - 14, r: 34, usedBy: new Set() },
     { type: "spring", x: CHOICE_START_X + 880, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
-    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER - 130, phase: 0.2, usedBy: new Set() },
+    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER - FINAL_GATE_OFFSET, phase: 0.2, usedBy: new Set() },
     { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
-    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER + 130, phase: 3.1, usedBy: new Set() },
+    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER + FINAL_GATE_OFFSET, phase: 3.1, usedBy: new Set() },
   ];
 }
 
@@ -325,8 +330,8 @@ function updatePig(pig, dt) {
 
 function chooseTargetY(pig) {
   const center = COURSE_CENTER;
-  const upper = center - 150 + pig.routeOffset;
-  const lower = center + 150 + pig.routeOffset;
+  const upper = center - OUTER_ROUTE_OFFSET + pig.routeOffset;
+  const lower = center + OUTER_ROUTE_OFFSET + pig.routeOffset;
 
   const spinner = hazards[0];
   if (spinner && pig.x > spinner.x - 390 && pig.x < spinner.x + 245) {
@@ -356,28 +361,28 @@ function chooseTargetY(pig) {
   }
 
   if (pig.x >= BOTTLENECK_END_X && pig.x < MAZE_START_X) {
-    return clampTrackY(center - 120 + pig.routeOffset * 0.2);
+    return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.85 + pig.routeOffset * 0.2);
   }
 
   if (pig.x >= MAZE_START_X && pig.x < MAZE_END_X) {
-    if (pig.x < MAZE_START_X + 275) return clampTrackY(center - 148 + pig.routeOffset * 0.18);
-    if (pig.x < MAZE_START_X + 645) return clampTrackY(center + 146 + pig.routeOffset * 0.18);
-    if (pig.x < MAZE_START_X + 930) return clampTrackY(center - 132 + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 275) return clampTrackY(center - MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 645) return clampTrackY(center + MAZE_ROUTE_OFFSET + pig.routeOffset * 0.18);
+    if (pig.x < MAZE_START_X + 930) return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.9 + pig.routeOffset * 0.18);
     return clampTrackY(center + pig.routeOffset * 0.25);
   }
 
   if (pig.x >= CHOICE_START_X && pig.x < CHOICE_END_X) {
     const choice = pig.index % 3;
-    if (choice === 0) return clampTrackY(center - 126 + pig.routeOffset * 0.25);
+    if (choice === 0) return clampTrackY(center - CHOICE_ROUTE_OFFSET + pig.routeOffset * 0.25);
     if (choice === 1) return clampTrackY(center + pig.routeOffset * 0.35);
-    return clampTrackY(center + 126 + pig.routeOffset * 0.25);
+    return clampTrackY(center + CHOICE_ROUTE_OFFSET + pig.routeOffset * 0.25);
   }
 
   if (pig.x >= CHOICE_END_X && pig.x < FINAL_GATE_X + 180) {
     const gateLane = (pig.index + Math.floor(elapsed * 0.18)) % 3;
-    if (gateLane === 0) return clampTrackY(center - 130 + pig.routeOffset * 0.15);
+    if (gateLane === 0) return clampTrackY(center - FINAL_GATE_OFFSET + pig.routeOffset * 0.15);
     if (gateLane === 1) return clampTrackY(center + pig.routeOffset * 0.2);
-    return clampTrackY(center + 130 + pig.routeOffset * 0.15);
+    return clampTrackY(center + FINAL_GATE_OFFSET + pig.routeOffset * 0.15);
   }
 
   return clampTrackY(center + pig.routeOffset);
@@ -758,17 +763,17 @@ function courseFenceSegments() {
     { x1: x + w, y1: center, x2: x, y2: center + h },
     { x1: x, y1: center + h, x2: x - w, y2: center },
     { x1: x - w, y1: center, x2: x, y2: center - h },
-    { x1: rightTip, y1: center - 205, x2: FUNNEL_END_X, y2: center - CORRIDOR_HALF },
-    { x1: rightTip, y1: center + 205, x2: FUNNEL_END_X, y2: center + CORRIDOR_HALF },
+    { x1: rightTip, y1: center - 245, x2: FUNNEL_END_X, y2: center - CORRIDOR_HALF },
+    { x1: rightTip, y1: center + 245, x2: FUNNEL_END_X, y2: center + CORRIDOR_HALF },
     { x1: FUNNEL_END_X, y1: center - CORRIDOR_HALF, x2: corridorEnd, y2: center - CORRIDOR_HALF },
     { x1: FUNNEL_END_X, y1: center + CORRIDOR_HALF, x2: corridorEnd, y2: center + CORRIDOR_HALF },
     { x1: MAZE_START_X, y1: mazeTop, x2: MAZE_END_X, y2: mazeTop },
     { x1: MAZE_START_X, y1: mazeBottom, x2: MAZE_END_X, y2: mazeBottom },
-    { x1: MAZE_START_X + 230, y1: mazeCenter - 48, x2: MAZE_START_X + 230, y2: mazeBottom },
-    { x1: MAZE_START_X + 560, y1: mazeTop, x2: MAZE_START_X + 560, y2: mazeCenter + 48 },
-    { x1: MAZE_START_X + 870, y1: mazeCenter - 48, x2: MAZE_START_X + 870, y2: mazeBottom },
-    { x1: FINAL_GATE_X - 120, y1: center - 76, x2: FINAL_GATE_X + 120, y2: center - 76 },
-    { x1: FINAL_GATE_X - 120, y1: center + 76, x2: FINAL_GATE_X + 120, y2: center + 76 },
+    { x1: MAZE_START_X + 230, y1: mazeCenter - 60, x2: MAZE_START_X + 230, y2: mazeBottom },
+    { x1: MAZE_START_X + 560, y1: mazeTop, x2: MAZE_START_X + 560, y2: mazeCenter + 60 },
+    { x1: MAZE_START_X + 870, y1: mazeCenter - 60, x2: MAZE_START_X + 870, y2: mazeBottom },
+    { x1: FINAL_GATE_X - 120, y1: center - 96, x2: FINAL_GATE_X + 120, y2: center - 96 },
+    { x1: FINAL_GATE_X - 120, y1: center + 96, x2: FINAL_GATE_X + 120, y2: center + 96 },
   ];
 }
 
@@ -909,12 +914,12 @@ function drawWorld() {
   ctx.fillStyle = "#7c5947";
   ctx.fillRect(0, TRACK_BOTTOM, WORLD_WIDTH, H - TRACK_BOTTOM);
 
-  for (let i = 0; i < pigs.length; i += 1) {
-    const lane = laneBounds(i, pigs.length);
+  for (let i = 0; i < GUIDE_LANE_COUNT; i += 1) {
+    const lane = laneBounds(i, GUIDE_LANE_COUNT);
     ctx.fillStyle = laneColors[i % laneColors.length];
     ctx.fillRect(0, lane.top, WORLD_WIDTH, lane.height);
     ctx.strokeStyle = "rgba(255,255,255,0.68)";
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, lane.bottom);
     ctx.lineTo(WORLD_WIDTH, lane.bottom);
@@ -938,12 +943,12 @@ function drawDiamondField() {
   ctx.save();
   ctx.fillStyle = "rgba(116, 194, 94, 0.42)";
   ctx.beginPath();
-  ctx.moveTo(rightTip, center - 205);
+  ctx.moveTo(rightTip, center - 245);
   ctx.lineTo(FUNNEL_END_X, center - CORRIDOR_HALF);
   ctx.lineTo(corridorEnd, center - CORRIDOR_HALF);
   ctx.lineTo(corridorEnd, center + CORRIDOR_HALF);
   ctx.lineTo(FUNNEL_END_X, center + CORRIDOR_HALF);
-  ctx.lineTo(rightTip, center + 205);
+  ctx.lineTo(rightTip, center + 245);
   ctx.closePath();
   ctx.fill();
 
@@ -968,9 +973,23 @@ function drawExtendedCourseFields() {
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
   ctx.beginPath();
-  ctx.moveTo(MAZE_START_X + 40, center - 142);
-  ctx.bezierCurveTo(MAZE_START_X + 300, center - 160, MAZE_START_X + 330, center + 144, MAZE_START_X + 535, center + 144);
-  ctx.bezierCurveTo(MAZE_START_X + 790, center + 144, MAZE_START_X + 705, center - 130, MAZE_START_X + 965, center - 120);
+  ctx.moveTo(MAZE_START_X + 40, center - MAZE_ROUTE_OFFSET + 4);
+  ctx.bezierCurveTo(
+    MAZE_START_X + 300,
+    center - MAZE_ROUTE_OFFSET - 14,
+    MAZE_START_X + 330,
+    center + MAZE_ROUTE_OFFSET - 2,
+    MAZE_START_X + 535,
+    center + MAZE_ROUTE_OFFSET - 2
+  );
+  ctx.bezierCurveTo(
+    MAZE_START_X + 790,
+    center + MAZE_ROUTE_OFFSET - 2,
+    MAZE_START_X + 705,
+    center - MAZE_ROUTE_OFFSET * 0.9,
+    MAZE_START_X + 965,
+    center - MAZE_ROUTE_OFFSET * 0.85
+  );
   ctx.strokeStyle = "rgba(255, 255, 255, 0.32)";
   ctx.lineWidth = 54;
   ctx.lineCap = "round";
@@ -984,15 +1003,15 @@ function drawExtendedCourseFields() {
   ctx.lineWidth = 3;
   ctx.setLineDash([14, 14]);
   ctx.beginPath();
-  ctx.moveTo(CHOICE_START_X + 30, center - 72);
-  ctx.lineTo(CHOICE_END_X - 30, center - 72);
-  ctx.moveTo(CHOICE_START_X + 30, center + 72);
-  ctx.lineTo(CHOICE_END_X - 30, center + 72);
+  ctx.moveTo(CHOICE_START_X + 30, center - 96);
+  ctx.lineTo(CHOICE_END_X - 30, center - 96);
+  ctx.moveTo(CHOICE_START_X + 30, center + 96);
+  ctx.lineTo(CHOICE_END_X - 30, center + 96);
   ctx.stroke();
   ctx.setLineDash([]);
 
   ctx.fillStyle = "rgba(255, 248, 207, 0.34)";
-  roundRect(FINAL_GATE_X - 165, center - 190, 330, 380, 8);
+  roundRect(FINAL_GATE_X - 165, center - 225, 330, 450, 8);
   ctx.fill();
 
   ctx.restore();
