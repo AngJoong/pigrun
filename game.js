@@ -12,8 +12,8 @@ const raceClock = document.querySelector("#raceClock");
 
 const W = canvas.width;
 const H = canvas.height;
-const TRACK_TOP = 150;
-const TRACK_BOTTOM = H - 86;
+const TRACK_TOP = 96;
+const TRACK_BOTTOM = H - 48;
 const WORLD_WIDTH = 8200;
 const START_X = 92;
 const FINISH_X = WORLD_WIDTH - 170;
