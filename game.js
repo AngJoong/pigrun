@@ -68,9 +68,9 @@ let cameraX = 0;
 let lastTime = 0;
 let animationId = 0;
 let rosterInputTimer = 0;
-let showSectionGuides = false;
 
 const isTestMode = new URLSearchParams(window.location.search).get("test") === "1";
+let showSectionGuides = isTestMode;
 
 function randomRange(min, max) {
   return min + Math.random() * (max - min);
@@ -1667,6 +1667,8 @@ nameInput.addEventListener("input", scheduleRosterApply);
 
 if (isTestMode && sectionGuideToggle) {
   sectionGuideToggle.hidden = false;
+  sectionGuideToggle.textContent = showSectionGuides ? "구간선 끄기" : "구간선 켜기";
+  sectionGuideToggle.classList.toggle("is-active", showSectionGuides);
   sectionGuideToggle.addEventListener("click", () => {
     showSectionGuides = !showSectionGuides;
     sectionGuideToggle.textContent = showSectionGuides ? "구간선 끄기" : "구간선 켜기";
