@@ -148,6 +148,8 @@ function buildPig(entry, index, total) {
     routeSide: index % 2 === 0 ? -1 : 1,
     routeOffset: randomRange(-18, 18),
     decisionTimer: randomRange(0.3, 1.4),
+    diamondAvoidTimer: 0,
+    diamondAvoidY: lane.center + 12,
     vx: randomRange(245, 295),
     vy: randomRange(-95, 95),
     baseSpeed: randomRange(255, 318),
@@ -362,6 +364,7 @@ function updatePig(pig, dt) {
   pig.recoilTimer = Math.max(0, pig.recoilTimer - dt);
   pig.rollTimer = Math.max(0, pig.rollTimer - dt);
   pig.pushTimer = Math.max(0, pig.pushTimer - dt);
+  pig.diamondAvoidTimer = Math.max(0, pig.diamondAvoidTimer - dt);
   pig.decisionTimer -= dt;
   pig.tired = Math.min(0.22, pig.tired + dt * 0.006);
   if (pig.decisionTimer <= 0) {
@@ -413,6 +416,10 @@ function chooseTargetY(pig) {
   const center = COURSE_CENTER;
   const upper = center - OUTER_ROUTE_OFFSET + pig.routeOffset;
   const lower = center + OUTER_ROUTE_OFFSET + pig.routeOffset;
+
+  if (pig.diamondAvoidTimer > 0 && pig.x < FUNNEL_END_X) {
+    return clampTrackY(pig.diamondAvoidY);
+  }
 
   if (pig.x > trackSections.giantWindmill.startX - 120 && pig.x < trackSections.giantWindmill.endX + 120) {
     const wiggle = Math.sin((pig.x - trackSections.giantWindmill.startX) / 135 + pig.index) * 18;
@@ -902,6 +909,11 @@ function applyDiamondInteriorBlock(pig) {
   reflectPig(pig, closest.nx, closest.ny, 0.7);
   pig.vx = Math.max(pig.vx, pig.baseSpeed * 0.72);
   pig.vy += closest.ny * 55;
+  pig.routeSide = closest.ny >= 0 ? 1 : -1;
+  pig.routeOffset = randomRange(16, 30) * pig.routeSide;
+  pig.diamondAvoidY = clampTrackY(COURSE_CENTER + OUTER_ROUTE_OFFSET * pig.routeSide + pig.routeOffset);
+  pig.diamondAvoidTimer = 0.85;
+  pig.decisionTimer = Math.max(pig.decisionTimer, 0.85);
   pig.recoilTimer = Math.max(pig.recoilTimer, 0.12);
   pig.flipTimer = Math.max(pig.flipTimer, 0.14);
   if (pig.eventTimer < 0.18) event(pig, "마름모 울타리", "#d7a76b");
