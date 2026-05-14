@@ -14,7 +14,7 @@ const W = canvas.width;
 const H = canvas.height;
 const TRACK_TOP = 150;
 const TRACK_BOTTOM = H - 86;
-const WORLD_WIDTH = 6400;
+const WORLD_WIDTH = 8200;
 const START_X = 92;
 const FINISH_X = WORLD_WIDTH - 170;
 const PIG_RADIUS = 25;
@@ -26,11 +26,11 @@ const DIAMOND_H = 155;
 const FUNNEL_END_X = 1735;
 const CORRIDOR_HALF = 58;
 const BOTTLENECK_END_X = 2860;
-const MAZE_START_X = 3160;
-const MAZE_END_X = 4240;
-const CHOICE_START_X = 4380;
-const CHOICE_END_X = 5260;
-const FINAL_GATE_X = 5750;
+const MAZE_START_X = 3740;
+const MAZE_END_X = 5200;
+const CHOICE_START_X = 5460;
+const CHOICE_END_X = 6900;
+const FINAL_GATE_X = 7480;
 
 const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
 const fallbackNames = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
@@ -205,11 +205,11 @@ function makeHazards(total) {
       speed: -1.21,
       phase: 2.75,
     },
-    { type: "mud", x: 4580, y: COURSE_CENTER - 125, r: 42, usedBy: new Set() },
-    { type: "mud", x: 4820, y: COURSE_CENTER - 118, r: 38, usedBy: new Set() },
-    { type: "feed", x: 4720, y: COURSE_CENTER + 128, r: 34, usedBy: new Set() },
-    { type: "feed", x: 5000, y: COURSE_CENTER + 116, r: 34, usedBy: new Set() },
-    { type: "spring", x: 5000, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
+    { type: "mud", x: CHOICE_START_X + 260, y: COURSE_CENTER - 125, r: 42, usedBy: new Set() },
+    { type: "mud", x: CHOICE_START_X + 620, y: COURSE_CENTER - 118, r: 38, usedBy: new Set() },
+    { type: "feed", x: CHOICE_START_X + 420, y: COURSE_CENTER + 128, r: 34, usedBy: new Set() },
+    { type: "feed", x: CHOICE_START_X + 900, y: COURSE_CENTER + 116, r: 34, usedBy: new Set() },
+    { type: "spring", x: CHOICE_START_X + 880, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
     { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER - 130, phase: 0.2, usedBy: new Set() },
     { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
     { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER + 130, phase: 3.1, usedBy: new Set() },
