@@ -26,6 +26,8 @@ const OUTER_ROUTE_OFFSET = 185;
 const CHOICE_ROUTE_OFFSET = 170;
 const FINAL_GATE_OFFSET = 165;
 const MAZE_ROUTE_OFFSET = 176;
+const TWIN_WINDMILL_OFFSET = 142;
+const TWIN_WINDMILL_RADIUS = 150;
 const ZIGZAG_LANE_OFFSET = 150;
 const ZIGZAG_DIVIDER_OFFSET = 82;
 const DIAMOND_X = 1250;
@@ -178,12 +180,23 @@ function makeHazards(total) {
       type: "spinner",
       section: "giantWindmill",
       x: 750,
-      y: COURSE_CENTER,
-      radius: 236,
+      y: COURSE_CENTER - TWIN_WINDMILL_OFFSET,
+      radius: TWIN_WINDMILL_RADIUS,
       armWidth: 18,
       bladeCount: 4,
-      speed: -1.65,
+      speed: 1.55,
       phase: 0,
+    },
+    {
+      type: "spinner",
+      section: "giantWindmill",
+      x: 750,
+      y: COURSE_CENTER + TWIN_WINDMILL_OFFSET,
+      radius: TWIN_WINDMILL_RADIUS,
+      armWidth: 18,
+      bladeCount: 4,
+      speed: -1.55,
+      phase: 0.8,
     },
     {
       type: "spinner",
@@ -372,12 +385,9 @@ function chooseTargetY(pig) {
   const upper = center - OUTER_ROUTE_OFFSET + pig.routeOffset;
   const lower = center + OUTER_ROUTE_OFFSET + pig.routeOffset;
 
-  const spinner = hazards[0];
-  if (spinner && pig.x > spinner.x - 390 && pig.x < spinner.x + 245) {
-    if (pig.x < spinner.x - 250 && Math.abs(pig.y - center) < 96) {
-      pig.routeSide = pig.y < center ? -1 : 1;
-    }
-    return clampTrackY(pig.routeSide < 0 ? upper : lower);
+  if (pig.x > trackSections.giantWindmill.startX - 120 && pig.x < trackSections.giantWindmill.endX + 120) {
+    const wiggle = Math.sin((pig.x - trackSections.giantWindmill.startX) / 135 + pig.index) * 18;
+    return clampTrackY(center + wiggle + pig.routeOffset * 0.18);
   }
 
   if (pig.x > DIAMOND_X - 420 && pig.x < DIAMOND_X + DIAMOND_W + 70) {
