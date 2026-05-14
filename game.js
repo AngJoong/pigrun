@@ -37,6 +37,15 @@ const CHOICE_START_X = 5460;
 const CHOICE_END_X = 6900;
 const FINAL_GATE_X = 7480;
 
+const trackSections = {
+  giantWindmill: { name: "1구간 대왕풍차", startX: 430, endX: 1120 },
+  zigzagWindmills: { name: "2구간 지그재그 풍차", startX: FUNNEL_END_X, endX: BOTTLENECK_END_X },
+  diamondJunction: { name: "3구간 마름모 교차로", startX: DIAMOND_X - DIAMOND_W, endX: FUNNEL_END_X },
+  mazePath: { name: "4구간 울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
+  splitLanes: { name: "5구간 삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
+  finalGates: { name: "6구간 결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
+};
+
 const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
 const fallbackNames = ["분홍탄환", "꿀꿀번개", "진흙왕", "옥수대장", "사과코", "통통로켓"];
 const pigColors = ["#eec0bd", "#f1aaa9", "#f3c7c2", "#e9a6b5", "#f0bbb2", "#efb3c4"];
@@ -158,6 +167,7 @@ function makeHazards(total) {
   return [
     {
       type: "spinner",
+      section: "giantWindmill",
       x: 760,
       y: COURSE_CENTER,
       radius: 236,
@@ -168,6 +178,7 @@ function makeHazards(total) {
     },
     {
       type: "spinner",
+      section: "zigzagWindmills",
       x: 1845,
       y: COURSE_CENTER - CORRIDOR_HALF - 64,
       radius: 124,
@@ -179,6 +190,7 @@ function makeHazards(total) {
     },
     {
       type: "spinner",
+      section: "zigzagWindmills",
       x: 2105,
       y: COURSE_CENTER + CORRIDOR_HALF + 64,
       radius: 124,
@@ -190,6 +202,7 @@ function makeHazards(total) {
     },
     {
       type: "spinner",
+      section: "zigzagWindmills",
       x: 2365,
       y: COURSE_CENTER - CORRIDOR_HALF - 64,
       radius: 124,
@@ -201,6 +214,7 @@ function makeHazards(total) {
     },
     {
       type: "spinner",
+      section: "zigzagWindmills",
       x: 2625,
       y: COURSE_CENTER + CORRIDOR_HALF + 64,
       radius: 124,
@@ -210,14 +224,42 @@ function makeHazards(total) {
       speed: -1.21,
       phase: 2.75,
     },
-    { type: "mud", x: CHOICE_START_X + 260, y: COURSE_CENTER - CHOICE_ROUTE_OFFSET, r: 42, usedBy: new Set() },
-    { type: "mud", x: CHOICE_START_X + 620, y: COURSE_CENTER - CHOICE_ROUTE_OFFSET + 16, r: 38, usedBy: new Set() },
-    { type: "feed", x: CHOICE_START_X + 420, y: COURSE_CENTER + CHOICE_ROUTE_OFFSET, r: 34, usedBy: new Set() },
-    { type: "feed", x: CHOICE_START_X + 900, y: COURSE_CENTER + CHOICE_ROUTE_OFFSET - 14, r: 34, usedBy: new Set() },
-    { type: "spring", x: CHOICE_START_X + 880, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
-    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER - FINAL_GATE_OFFSET, phase: 0.2, usedBy: new Set() },
-    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
-    { type: "gate", x: FINAL_GATE_X, y: COURSE_CENTER + FINAL_GATE_OFFSET, phase: 3.1, usedBy: new Set() },
+    {
+      type: "mud",
+      section: "splitLanes",
+      x: CHOICE_START_X + 260,
+      y: COURSE_CENTER - CHOICE_ROUTE_OFFSET,
+      r: 42,
+      usedBy: new Set(),
+    },
+    {
+      type: "mud",
+      section: "splitLanes",
+      x: CHOICE_START_X + 620,
+      y: COURSE_CENTER - CHOICE_ROUTE_OFFSET + 16,
+      r: 38,
+      usedBy: new Set(),
+    },
+    {
+      type: "feed",
+      section: "splitLanes",
+      x: CHOICE_START_X + 420,
+      y: COURSE_CENTER + CHOICE_ROUTE_OFFSET,
+      r: 34,
+      usedBy: new Set(),
+    },
+    {
+      type: "feed",
+      section: "splitLanes",
+      x: CHOICE_START_X + 900,
+      y: COURSE_CENTER + CHOICE_ROUTE_OFFSET - 14,
+      r: 34,
+      usedBy: new Set(),
+    },
+    { type: "spring", section: "splitLanes", x: CHOICE_START_X + 880, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
+    { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER - FINAL_GATE_OFFSET, phase: 0.2, usedBy: new Set() },
+    { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
+    { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER + FINAL_GATE_OFFSET, phase: 3.1, usedBy: new Set() },
   ];
 }
 
