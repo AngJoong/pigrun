@@ -37,18 +37,15 @@ const MAZE_END_X = 5200;
 const CHOICE_START_X = 5460;
 const CHOICE_END_X = 6900;
 const FINAL_GATE_X = 7480;
-const SECTION_COUNT = 6;
-const SECTION_START_X = START_X;
-const SECTION_END_X = FINISH_X;
-const SECTION_WIDTH = (SECTION_END_X - SECTION_START_X) / SECTION_COUNT;
+const COURSE_UNIT_WIDTH = 100;
+const MAJOR_UNIT_EVERY = 5;
 
 const trackSections = {
-  giantWindmill: sectionBounds(0, "1구간 대왕풍차"),
-  zigzagWindmills: sectionBounds(1, "2구간 지그재그 풍차"),
-  mazePath: sectionBounds(2, "3구간 울타리 미로"),
-  transitionRun: sectionBounds(3, "4구간 전환 질주"),
-  splitLanes: sectionBounds(4, "5구간 삼갈래 선택길"),
-  finalGates: sectionBounds(5, "6구간 결승 게이트"),
+  giantWindmill: { name: "대왕풍차", startX: 430, endX: 1120 },
+  zigzagWindmills: { name: "지그재그 풍차", startX: FUNNEL_END_X, endX: BOTTLENECK_END_X },
+  mazePath: { name: "울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
+  splitLanes: { name: "삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
+  finalGates: { name: "결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
 };
 
 const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
@@ -74,12 +71,6 @@ let showSectionGuides = isTestMode;
 
 function randomRange(min, max) {
   return min + Math.random() * (max - min);
-}
-
-function sectionBounds(index, name) {
-  const startX = SECTION_START_X + SECTION_WIDTH * index;
-  const endX = index === SECTION_COUNT - 1 ? SECTION_END_X : startX + SECTION_WIDTH;
-  return { name, index: index + 1, startX, endX, width: endX - startX };
 }
 
 function shuffle(list) {
@@ -993,28 +984,31 @@ function drawWorld() {
 function drawSectionGuides() {
   if (!showSectionGuides) return;
 
-  const sections = Object.values(trackSections).sort((a, b) => a.startX - b.startX);
-  const boundaries = [...new Set(sections.flatMap((section) => [section.startX, section.endX]))].sort((a, b) => a - b);
   ctx.save();
-  ctx.lineWidth = 1;
-  ctx.setLineDash([6, 8]);
-  ctx.strokeStyle = "rgba(22, 62, 46, 0.62)";
-  for (const x of boundaries) {
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  const firstUnit = Math.max(0, Math.floor(cameraX / COURSE_UNIT_WIDTH) - 1);
+  const lastUnit = Math.ceil((cameraX + W) / COURSE_UNIT_WIDTH) + 1;
+  for (let unit = firstUnit; unit <= lastUnit; unit += 1) {
+    const x = unit * COURSE_UNIT_WIDTH;
+    if (x < START_X || x > FINISH_X) continue;
+    const isMajor = unit % MAJOR_UNIT_EVERY === 0;
+    ctx.lineWidth = isMajor ? 1.5 : 1;
+    ctx.setLineDash(isMajor ? [] : [4, 8]);
+    ctx.strokeStyle = isMajor ? "rgba(17, 64, 45, 0.72)" : "rgba(17, 64, 45, 0.35)";
     ctx.beginPath();
     ctx.moveTo(x + 0.5, TRACK_TOP);
     ctx.lineTo(x + 0.5, TRACK_BOTTOM);
     ctx.stroke();
+    if (isMajor) {
+      ctx.fillStyle = "rgba(17, 64, 45, 0.82)";
+      ctx.font = "900 13px system-ui";
+      ctx.fillText(`${unit * 100}cm`, x, TRACK_TOP + 8);
+    }
   }
-  ctx.setLineDash([]);
 
-  ctx.fillStyle = "rgba(20, 81, 57, 0.82)";
-  ctx.font = "900 15px system-ui";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  for (const section of sections) {
-    const x = (section.startX + section.endX) / 2;
-    ctx.fillText(section.name, x, TRACK_TOP + 10);
-  }
+  ctx.setLineDash([]);
   ctx.restore();
 }
 
