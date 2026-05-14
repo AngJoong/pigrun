@@ -26,6 +26,8 @@ const OUTER_ROUTE_OFFSET = 185;
 const CHOICE_ROUTE_OFFSET = 170;
 const FINAL_GATE_OFFSET = 165;
 const MAZE_ROUTE_OFFSET = 176;
+const ZIGZAG_LANE_OFFSET = 150;
+const ZIGZAG_DIVIDER_OFFSET = 82;
 const DIAMOND_X = 1250;
 const DIAMOND_W = 232;
 const DIAMOND_H = 185;
@@ -186,7 +188,7 @@ function makeHazards(total) {
       type: "spinner",
       section: "zigzagWindmills",
       x: 1750,
-      y: COURSE_CENTER - CORRIDOR_HALF - 64,
+      y: COURSE_CENTER - ZIGZAG_DIVIDER_OFFSET,
       radius: 124,
       armWidth: 15,
       bladeCount: 2,
@@ -198,7 +200,7 @@ function makeHazards(total) {
       type: "spinner",
       section: "zigzagWindmills",
       x: 2250,
-      y: COURSE_CENTER + CORRIDOR_HALF + 64,
+      y: COURSE_CENTER + ZIGZAG_DIVIDER_OFFSET,
       radius: 124,
       armWidth: 15,
       bladeCount: 2,
@@ -210,7 +212,7 @@ function makeHazards(total) {
       type: "spinner",
       section: "zigzagWindmills",
       x: 2750,
-      y: COURSE_CENTER - CORRIDOR_HALF - 64,
+      y: COURSE_CENTER - ZIGZAG_DIVIDER_OFFSET,
       radius: 124,
       armWidth: 15,
       bladeCount: 2,
@@ -392,8 +394,10 @@ function chooseTargetY(pig) {
   }
 
   if (pig.x >= FUNNEL_END_X && pig.x < BOTTLENECK_END_X) {
-    const wiggle = Math.sin((pig.x - FUNNEL_END_X) / 180 + pig.index) * 13;
-    return clampTrackY(center + wiggle + pig.routeOffset * 0.18);
+    const lane = pig.index % 3;
+    const laneY = lane === 0 ? center - ZIGZAG_LANE_OFFSET : lane === 1 ? center : center + ZIGZAG_LANE_OFFSET;
+    const wiggle = Math.sin((pig.x - FUNNEL_END_X) / 170 + pig.index) * 10;
+    return clampTrackY(laneY + wiggle + pig.routeOffset * 0.12);
   }
 
   if (pig.x >= BOTTLENECK_END_X && pig.x < MAZE_START_X) {
@@ -789,8 +793,6 @@ function courseFenceSegments() {
   const x = DIAMOND_X;
   const w = DIAMOND_W;
   const h = DIAMOND_H;
-  const rightTip = x + w;
-  const corridorEnd = BOTTLENECK_END_X;
   const mazeTop = TRACK_TOP + 58;
   const mazeBottom = TRACK_BOTTOM - 58;
   const mazeCenter = center;
@@ -799,10 +801,8 @@ function courseFenceSegments() {
     { x1: x + w, y1: center, x2: x, y2: center + h },
     { x1: x, y1: center + h, x2: x - w, y2: center },
     { x1: x - w, y1: center, x2: x, y2: center - h },
-    { x1: rightTip, y1: center - 245, x2: FUNNEL_END_X, y2: center - CORRIDOR_HALF },
-    { x1: rightTip, y1: center + 245, x2: FUNNEL_END_X, y2: center + CORRIDOR_HALF },
-    { x1: FUNNEL_END_X, y1: center - CORRIDOR_HALF, x2: corridorEnd, y2: center - CORRIDOR_HALF },
-    { x1: FUNNEL_END_X, y1: center + CORRIDOR_HALF, x2: corridorEnd, y2: center + CORRIDOR_HALF },
+    { x1: FUNNEL_END_X, y1: center - ZIGZAG_DIVIDER_OFFSET, x2: BOTTLENECK_END_X, y2: center - ZIGZAG_DIVIDER_OFFSET },
+    { x1: FUNNEL_END_X, y1: center + ZIGZAG_DIVIDER_OFFSET, x2: BOTTLENECK_END_X, y2: center + ZIGZAG_DIVIDER_OFFSET },
     { x1: MAZE_START_X, y1: mazeTop, x2: MAZE_END_X, y2: mazeTop },
     { x1: MAZE_START_X, y1: mazeBottom, x2: MAZE_END_X, y2: mazeBottom },
     { x1: MAZE_START_X + 500, y1: mazeCenter - 60, x2: MAZE_START_X + 500, y2: mazeBottom },
@@ -1005,18 +1005,9 @@ function drawDiamondField() {
   const x = DIAMOND_X;
   const w = DIAMOND_W;
   const h = DIAMOND_H;
-  const rightTip = x + w;
-  const corridorEnd = BOTTLENECK_END_X;
   ctx.save();
   ctx.fillStyle = "rgba(116, 194, 94, 0.42)";
-  ctx.beginPath();
-  ctx.moveTo(rightTip, center - 245);
-  ctx.lineTo(FUNNEL_END_X, center - CORRIDOR_HALF);
-  ctx.lineTo(corridorEnd, center - CORRIDOR_HALF);
-  ctx.lineTo(corridorEnd, center + CORRIDOR_HALF);
-  ctx.lineTo(FUNNEL_END_X, center + CORRIDOR_HALF);
-  ctx.lineTo(rightTip, center + 245);
-  ctx.closePath();
+  roundRect(FUNNEL_END_X, TRACK_TOP + 72, BOTTLENECK_END_X - FUNNEL_END_X, TRACK_BOTTOM - TRACK_TOP - 144, 8);
   ctx.fill();
 
   ctx.fillStyle = "rgba(116, 194, 94, 0.64)";
