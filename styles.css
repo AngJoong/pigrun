@@ -105,6 +105,18 @@ h2 {
   font-weight: 900;
 }
 
+.test-toggle {
+  border-color: #2c7b55;
+  color: #145139;
+  background: #e7fff0;
+  white-space: nowrap;
+}
+
+.test-toggle.is-active {
+  color: #fff;
+  background: #1d6b49;
+}
+
 canvas {
   display: block;
   width: 100%;

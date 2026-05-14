@@ -9,6 +9,7 @@ const nameInput = document.querySelector("#nameInput");
 const raceStatus = document.querySelector("#raceStatus");
 const leaderboard = document.querySelector("#leaderboard");
 const raceClock = document.querySelector("#raceClock");
+const sectionGuideToggle = document.querySelector("#sectionGuideToggle");
 
 const W = canvas.width;
 const H = canvas.height;
@@ -38,12 +39,12 @@ const CHOICE_END_X = 6900;
 const FINAL_GATE_X = 7480;
 
 const trackSections = {
-  giantWindmill: { name: "1구간 대왕풍차", startX: 430, endX: 1120 },
-  zigzagWindmills: { name: "2구간 지그재그 풍차", startX: FUNNEL_END_X, endX: BOTTLENECK_END_X },
-  diamondJunction: { name: "3구간 마름모 교차로", startX: DIAMOND_X - DIAMOND_W, endX: FUNNEL_END_X },
-  mazePath: { name: "4구간 울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
-  splitLanes: { name: "5구간 삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
-  finalGates: { name: "6구간 결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
+  giantWindmill: { name: "대왕풍차", startX: 430, endX: 1120 },
+  diamondJunction: { name: "마름모 교차로", startX: DIAMOND_X - DIAMOND_W, endX: FUNNEL_END_X },
+  zigzagWindmills: { name: "지그재그 풍차", startX: FUNNEL_END_X, endX: BOTTLENECK_END_X },
+  mazePath: { name: "울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
+  splitLanes: { name: "삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
+  finalGates: { name: "결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
 };
 
 const defaultNameInput = "분홍탄환\n꿀꿀번개\n진흙왕\n옥수대장\n사과코\n통통로켓";
@@ -63,6 +64,9 @@ let cameraX = 0;
 let lastTime = 0;
 let animationId = 0;
 let rosterInputTimer = 0;
+let showSectionGuides = false;
+
+const isTestMode = new URLSearchParams(window.location.search).get("test") === "1";
 
 function randomRange(min, max) {
   return min + Math.random() * (max - min);
@@ -972,7 +976,36 @@ function drawWorld() {
   drawDiamondField();
   drawExtendedCourseFields();
   drawCourseFences();
+  drawSectionGuides();
   drawFinishLine();
+}
+
+function drawSectionGuides() {
+  if (!showSectionGuides) return;
+
+  const sections = Object.values(trackSections).sort((a, b) => a.startX - b.startX);
+  const boundaries = [...new Set(sections.flatMap((section) => [section.startX, section.endX]))].sort((a, b) => a - b);
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 8]);
+  ctx.strokeStyle = "rgba(22, 62, 46, 0.62)";
+  for (const x of boundaries) {
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, TRACK_TOP);
+    ctx.lineTo(x + 0.5, TRACK_BOTTOM);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "rgba(20, 81, 57, 0.82)";
+  ctx.font = "900 15px system-ui";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (const section of sections) {
+    const x = (section.startX + section.endX) / 2;
+    ctx.fillText(section.name, x, TRACK_TOP + 10);
+  }
+  ctx.restore();
 }
 
 function drawDiamondField() {
@@ -1621,6 +1654,16 @@ resetBtn.addEventListener("click", () => setupRace(true));
 sampleBtn.addEventListener("click", () => setupRace(false));
 applyNamesBtn.addEventListener("click", applyRosterFromInput);
 nameInput.addEventListener("input", scheduleRosterApply);
+
+if (isTestMode && sectionGuideToggle) {
+  sectionGuideToggle.hidden = false;
+  sectionGuideToggle.addEventListener("click", () => {
+    showSectionGuides = !showSectionGuides;
+    sectionGuideToggle.textContent = showSectionGuides ? "구간선 끄기" : "구간선 켜기";
+    sectionGuideToggle.classList.toggle("is-active", showSectionGuides);
+    draw();
+  });
+}
 
 nameInput.value = nameInput.value.trim() || defaultNameInput;
 roster = parseRosterInput(nameInput.value);
