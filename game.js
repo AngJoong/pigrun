@@ -28,8 +28,9 @@ const FINAL_GATE_OFFSET = 165;
 const MAZE_ROUTE_OFFSET = 176;
 const TWIN_WINDMILL_OFFSET = 142;
 const TWIN_WINDMILL_RADIUS = 150;
-const ZIGZAG_LANE_OFFSET = 150;
-const ZIGZAG_DIVIDER_OFFSET = 82;
+const ZIGZAG_LANE_OFFSET = 144;
+const ZIGZAG_DIVIDER_OFFSET = 72;
+const ZIGZAG_WINDMILL_RADIUS = 120;
 const DIAMOND_X = 1250;
 const DIAMOND_W = 232;
 const DIAMOND_H = 185;
@@ -143,9 +144,9 @@ function buildPig(entry, index, total) {
     routeSide: index % 2 === 0 ? -1 : 1,
     routeOffset: randomRange(-18, 18),
     decisionTimer: randomRange(0.3, 1.4),
-    vx: randomRange(225, 275),
+    vx: randomRange(245, 295),
     vy: randomRange(-95, 95),
-    baseSpeed: randomRange(230, 292),
+    baseSpeed: randomRange(255, 318),
     burst: randomRange(0.88, 1.2),
     luck: randomRange(0.84, 1.18),
     dodge: randomRange(0.28, 0.78),
@@ -203,11 +204,11 @@ function makeHazards(total) {
       section: "zigzagWindmills",
       x: 1875,
       y: COURSE_CENTER - ZIGZAG_DIVIDER_OFFSET,
-      radius: 112,
+      radius: ZIGZAG_WINDMILL_RADIUS,
       armWidth: 15,
       bladeCount: 2,
       clearancePadding: 3,
-      speed: 1.22,
+      speed: 1.02,
       phase: 0.65,
     },
     {
@@ -215,11 +216,11 @@ function makeHazards(total) {
       section: "zigzagWindmills",
       x: 2125,
       y: COURSE_CENTER + ZIGZAG_DIVIDER_OFFSET,
-      radius: 112,
+      radius: ZIGZAG_WINDMILL_RADIUS,
       armWidth: 15,
       bladeCount: 2,
       clearancePadding: 3,
-      speed: -1.26,
+      speed: -1.04,
       phase: 1.2,
     },
     {
@@ -227,11 +228,11 @@ function makeHazards(total) {
       section: "zigzagWindmills",
       x: 2375,
       y: COURSE_CENTER - ZIGZAG_DIVIDER_OFFSET,
-      radius: 112,
+      radius: ZIGZAG_WINDMILL_RADIUS,
       armWidth: 15,
       bladeCount: 2,
       clearancePadding: 3,
-      speed: 1.16,
+      speed: 0.98,
       phase: 2.05,
     },
     {
@@ -239,11 +240,11 @@ function makeHazards(total) {
       section: "zigzagWindmills",
       x: 2625,
       y: COURSE_CENTER + ZIGZAG_DIVIDER_OFFSET,
-      radius: 112,
+      radius: ZIGZAG_WINDMILL_RADIUS,
       armWidth: 15,
       bladeCount: 2,
       clearancePadding: 3,
-      speed: -1.18,
+      speed: -1.0,
       phase: 2.65,
     },
     {
@@ -251,11 +252,11 @@ function makeHazards(total) {
       section: "zigzagWindmills",
       x: 2875,
       y: COURSE_CENTER - ZIGZAG_DIVIDER_OFFSET,
-      radius: 112,
+      radius: ZIGZAG_WINDMILL_RADIUS,
       armWidth: 15,
       bladeCount: 2,
       clearancePadding: 3,
-      speed: 1.14,
+      speed: 0.96,
       phase: 3.2,
     },
     {
