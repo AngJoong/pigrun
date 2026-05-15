@@ -614,12 +614,13 @@ function applyHazard(pig, hazard) {
     if (Math.abs(dx) > 46 || Math.abs(dy) > 52 || hazard.usedBy.has(pig.id)) return;
     hazard.usedBy.add(pig.id);
     hazard.punchStart = elapsed - 0.12;
-    pig.x = Math.min(pig.x, hazard.x - 36);
-    pig.vx = -randomRange(210, 330);
-    pig.vy += Math.sign(dy || randomRange(-1, 1)) * randomRange(120, 220);
-    pig.recoilTimer = 0.58;
-    pig.flipTimer = 0.65;
-    startRoll(pig, { nx: -1, ny: Math.sign(dy || 1) * 0.25 }, 0.9);
+    pig.x = Math.min(pig.x, hazard.x - 40);
+    pig.y = Math.max(TRACK_TOP + PIG_RADIUS, pig.y - 8);
+    pig.vx = -randomRange(245, 370);
+    pig.vy = -randomRange(260, 390) + Math.sign(dy || randomRange(-1, 1)) * randomRange(30, 90);
+    pig.recoilTimer = 0.7;
+    pig.flipTimer = 0.86;
+    startRoll(pig, { nx: -0.75, ny: -0.66 }, 1.08);
     event(pig, "펀치!", "#ff4c4c");
     burst(hazard.x, hazard.y, "#ff4c4c", 16);
     return;
@@ -1556,6 +1557,7 @@ function drawPunch(h) {
   const pop = punchProgress(h);
   const open = Math.min(1, pop * 1.35);
   const reach = pop * 62;
+  const angle = -0.32;
   ctx.save();
 
   ctx.fillStyle = "rgba(84, 48, 35, 0.24)";
@@ -1563,23 +1565,36 @@ function drawPunch(h) {
   ctx.ellipse(h.x, h.y + 29, 43, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#4d3328";
-  roundRect(h.x - 39, h.y + 10, 78, 28, 8);
+  ctx.fillStyle = "#4e3327";
+  ctx.beginPath();
+  ctx.ellipse(h.x, h.y + 20, 42, 18, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#65bd57";
-  roundRect(h.x - 39 - open * 28, h.y + 8 - open * 5, 36, 30, 6);
-  ctx.fill();
-  roundRect(h.x + 3 + open * 28, h.y + 8 - open * 5, 36, 30, 6);
+  ctx.fillStyle = "#5fb653";
+  ctx.beginPath();
+  ctx.moveTo(h.x - 41 - open * 26, h.y + 5 - open * 8);
+  ctx.quadraticCurveTo(h.x - 22 - open * 34, h.y - 4 - open * 7, h.x - 1 - open * 11, h.y + 12);
+  ctx.lineTo(h.x - 6 - open * 25, h.y + 35);
+  ctx.quadraticCurveTo(h.x - 30 - open * 20, h.y + 37, h.x - 43 - open * 7, h.y + 24);
+  ctx.closePath();
   ctx.fill();
 
-  ctx.strokeStyle = "#3e7e39";
+  ctx.fillStyle = "#6ac45b";
+  ctx.beginPath();
+  ctx.moveTo(h.x + 41 + open * 26, h.y + 5 - open * 8);
+  ctx.quadraticCurveTo(h.x + 22 + open * 34, h.y - 4 - open * 7, h.x + 1 + open * 11, h.y + 12);
+  ctx.lineTo(h.x + 6 + open * 25, h.y + 35);
+  ctx.quadraticCurveTo(h.x + 30 + open * 20, h.y + 37, h.x + 43 + open * 7, h.y + 24);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = "#3f8339";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(h.x - 3 - open * 28, h.y + 12);
-  ctx.lineTo(h.x - 3 - open * 28, h.y + 34);
-  ctx.moveTo(h.x + 3 + open * 28, h.y + 12);
-  ctx.lineTo(h.x + 3 + open * 28, h.y + 34);
+  ctx.moveTo(h.x - 2 - open * 22, h.y + 13);
+  ctx.lineTo(h.x - 7 - open * 29, h.y + 33);
+  ctx.moveTo(h.x + 2 + open * 22, h.y + 13);
+  ctx.lineTo(h.x + 7 + open * 29, h.y + 33);
   ctx.stroke();
 
   if (pop < 0.06) {
@@ -1590,6 +1605,9 @@ function drawPunch(h) {
   const springStartX = h.x + 22;
   const springEndX = h.x - 19 - reach;
   const springY = h.y + 20;
+  ctx.translate(h.x, h.y + 20);
+  ctx.rotate(angle);
+  ctx.translate(-h.x, -(h.y + 20));
   ctx.strokeStyle = "#f1c84d";
   ctx.lineWidth = 6;
   ctx.lineCap = "round";
