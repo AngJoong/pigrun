@@ -1555,65 +1555,97 @@ function punchProgress(h) {
 
 function drawPunch(h) {
   const pop = punchProgress(h);
-  const open = Math.min(1, pop * 1.35);
-  const reach = pop * 62;
-  const angle = -0.32;
+  const burstOpen = Math.min(1, pop * 1.6);
+  const reach = pop * 78;
+  const angle = -0.48;
+  const baseY = h.y + 24;
   ctx.save();
 
-  ctx.fillStyle = "rgba(84, 48, 35, 0.24)";
+  ctx.fillStyle = "rgba(51, 34, 23, 0.26)";
   ctx.beginPath();
-  ctx.ellipse(h.x, h.y + 29, 43, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(h.x, baseY + 13, 55, 13, -0.05, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#4e3327";
+  ctx.fillStyle = "#463024";
   ctx.beginPath();
-  ctx.ellipse(h.x, h.y + 20, 42, 18, 0, 0, Math.PI * 2);
+  ctx.ellipse(h.x, baseY, 46, 22, -0.08, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.fillStyle = "#6b4a32";
+  [
+    [h.x - 30, baseY + 4, 13],
+    [h.x - 12, baseY + 10, 11],
+    [h.x + 12, baseY + 9, 12],
+    [h.x + 31, baseY + 3, 14],
+  ].forEach(([x, y, r]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
   ctx.fillStyle = "#5fb653";
   ctx.beginPath();
-  ctx.moveTo(h.x - 41 - open * 26, h.y + 5 - open * 8);
-  ctx.quadraticCurveTo(h.x - 22 - open * 34, h.y - 4 - open * 7, h.x - 1 - open * 11, h.y + 12);
-  ctx.lineTo(h.x - 6 - open * 25, h.y + 35);
-  ctx.quadraticCurveTo(h.x - 30 - open * 20, h.y + 37, h.x - 43 - open * 7, h.y + 24);
+  ctx.moveTo(h.x - 44 - burstOpen * 16, baseY - 17 - burstOpen * 12);
+  ctx.quadraticCurveTo(h.x - 22 - burstOpen * 27, baseY - 31 - burstOpen * 10, h.x - 5 - burstOpen * 9, baseY - 8);
+  ctx.lineTo(h.x - 13 - burstOpen * 18, baseY + 14);
+  ctx.quadraticCurveTo(h.x - 34 - burstOpen * 12, baseY + 17, h.x - 48 - burstOpen * 5, baseY + 2);
   ctx.closePath();
   ctx.fill();
 
   ctx.fillStyle = "#6ac45b";
   ctx.beginPath();
-  ctx.moveTo(h.x + 41 + open * 26, h.y + 5 - open * 8);
-  ctx.quadraticCurveTo(h.x + 22 + open * 34, h.y - 4 - open * 7, h.x + 1 + open * 11, h.y + 12);
-  ctx.lineTo(h.x + 6 + open * 25, h.y + 35);
-  ctx.quadraticCurveTo(h.x + 30 + open * 20, h.y + 37, h.x + 43 + open * 7, h.y + 24);
+  ctx.moveTo(h.x + 44 + burstOpen * 16, baseY - 17 - burstOpen * 12);
+  ctx.quadraticCurveTo(h.x + 22 + burstOpen * 27, baseY - 31 - burstOpen * 10, h.x + 5 + burstOpen * 9, baseY - 8);
+  ctx.lineTo(h.x + 13 + burstOpen * 18, baseY + 14);
+  ctx.quadraticCurveTo(h.x + 34 + burstOpen * 12, baseY + 17, h.x + 48 + burstOpen * 5, baseY + 2);
   ctx.closePath();
   ctx.fill();
 
-  ctx.strokeStyle = "#3f8339";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(h.x - 2 - open * 22, h.y + 13);
-  ctx.lineTo(h.x - 7 - open * 29, h.y + 33);
-  ctx.moveTo(h.x + 2 + open * 22, h.y + 13);
-  ctx.lineTo(h.x + 7 + open * 29, h.y + 33);
-  ctx.stroke();
+  if (pop > 0.08) {
+    for (let i = 0; i < 13; i += 1) {
+      const side = i % 2 ? 1 : -1;
+      const scatter = 18 + i * 4.4;
+      const lift = pop * (18 + (i % 5) * 8);
+      const x = h.x + side * scatter * pop + Math.sin(i * 1.7 + h.phase) * 7;
+      const y = baseY - lift + Math.cos(i * 2.1 + h.phase) * 5;
+      ctx.fillStyle = i % 3 === 0 ? "#3f7c36" : "#6b4a32";
+      ctx.beginPath();
+      ctx.ellipse(x, y, 3 + (i % 4), 2 + (i % 3), i * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
   if (pop < 0.06) {
     ctx.restore();
     return;
   }
 
-  const springStartX = h.x + 22;
-  const springEndX = h.x - 19 - reach;
-  const springY = h.y + 20;
-  ctx.translate(h.x, h.y + 20);
+  ctx.translate(h.x, baseY - 2);
   ctx.rotate(angle);
-  ctx.translate(-h.x, -(h.y + 20));
-  ctx.strokeStyle = "#f1c84d";
-  ctx.lineWidth = 6;
+  ctx.translate(-h.x, -(baseY - 2));
+
+  const springStartX = h.x + 18;
+  const springEndX = h.x - 28 - reach;
+  const springY = baseY - 2;
+
+  ctx.strokeStyle = "#1f241d";
+  ctx.lineWidth = 9;
   ctx.lineCap = "round";
   ctx.beginPath();
-  for (let i = 0; i <= 8; i += 1) {
-    const ratio = i / 8;
+  for (let i = 0; i <= 11; i += 1) {
+    const ratio = i / 11;
+    const x = springStartX + (springEndX - springStartX) * ratio;
+    const y = springY + (i % 2 ? -12 : 12) * pop;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = "#aeb4a4";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  for (let i = 0; i <= 11; i += 1) {
+    const ratio = i / 11;
     const x = springStartX + (springEndX - springStartX) * ratio;
     const y = springY + (i % 2 ? -10 : 10) * pop;
     if (i === 0) ctx.moveTo(x, y);
@@ -1621,16 +1653,29 @@ function drawPunch(h) {
   }
   ctx.stroke();
 
-  ctx.fillStyle = "#e33d3d";
-  roundRect(springEndX - 43, h.y + 2, 48, 38, 12);
+  ctx.fillStyle = "#b72622";
+  roundRect(springEndX - 17, baseY - 22, 18, 43, 8);
   ctx.fill();
-  ctx.fillStyle = "#ff8a80";
-  roundRect(springEndX - 34, h.y + 8, 17, 10, 5);
+
+  const gloveX = springEndX - 44;
+  const gloveY = baseY - 3;
+  ctx.fillStyle = "#8f1715";
+  ctx.beginPath();
+  ctx.ellipse(gloveX + 4, gloveY + 13, 27, 19, -0.25, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#fff4e8";
-  ctx.font = "900 12px system-ui";
-  ctx.textAlign = "center";
-  ctx.fillText("펀치", springEndX - 19, h.y + 27);
+  ctx.fillStyle = "#c63830";
+  ctx.beginPath();
+  ctx.ellipse(gloveX, gloveY - 5, 28, 25, -0.18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#d94b41";
+  ctx.beginPath();
+  ctx.ellipse(gloveX - 9, gloveY - 11, 12, 8, -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#64110f";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(gloveX + 9, gloveY + 1, 15, -1.2, 1.05);
+  ctx.stroke();
   ctx.restore();
 }
 
