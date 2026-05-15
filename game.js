@@ -42,6 +42,8 @@ const FUNNEL_END_X = 1500;
 const ZIGZAG_START_X = 1750;
 const CORRIDOR_HALF = 66;
 const BOTTLENECK_END_X = 3000;
+const PUNCH_START_X = 3000;
+const PUNCH_END_X = 3500;
 const MAZE_START_X = 3500;
 const MAZE_END_X = 5000;
 const CHOICE_START_X = 5500;
@@ -55,6 +57,7 @@ const trackSections = {
   giantWindmill: { name: "대왕풍차", startX: 500, endX: 1000 },
   diamondJunction: { name: "마름모 교차로", startX: 1000, endX: 1500 },
   zigzagWindmills: { name: "지그재그 풍차", startX: ZIGZAG_START_X, endX: BOTTLENECK_END_X },
+  punchZone: { name: "스프링 펀치", startX: PUNCH_START_X, endX: PUNCH_END_X },
   mazePath: { name: "울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
   splitLanes: { name: "삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
   finalGates: { name: "결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
@@ -69,6 +72,7 @@ const sectionAliases = {
   giant: "giantWindmill",
   diamond: "diamondJunction",
   zigzag: "zigzagWindmills",
+  punch: "punchZone",
   maze: "mazePath",
   split: "splitLanes",
   gate: "finalGates",
@@ -354,6 +358,11 @@ function baseHazards() {
       r: 34,
       usedBy: new Set(),
     },
+    { type: "punch", section: "punchZone", x: 3050, y: COURSE_CENTER - 180, r: 44, phase: 0.1, usedBy: new Set() },
+    { type: "punch", section: "punchZone", x: 3150, y: COURSE_CENTER, r: 44, phase: 0.6, usedBy: new Set() },
+    { type: "punch", section: "punchZone", x: 3250, y: COURSE_CENTER + 180, r: 44, phase: 1.1, usedBy: new Set() },
+    { type: "punch", section: "punchZone", x: 3350, y: COURSE_CENTER - 90, r: 44, phase: 1.6, usedBy: new Set() },
+    { type: "punch", section: "punchZone", x: 3450, y: COURSE_CENTER + 90, r: 44, phase: 2.1, usedBy: new Set() },
     { type: "spring", section: "splitLanes", x: 6250, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
     { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER - FINAL_GATE_OFFSET, phase: 0.2, usedBy: new Set() },
     { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
@@ -521,7 +530,10 @@ function chooseTargetY(pig) {
   }
 
   if (x >= BOTTLENECK_END_X && x < MAZE_START_X) {
-    return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.85 + pig.routeOffset * 0.2);
+    const lane = pig.index % 3;
+    const laneY = lane === 0 ? center - 180 : lane === 1 ? center : center + 180;
+    const wiggle = Math.sin((x - PUNCH_START_X) / 115 + pig.index) * 16;
+    return clampTrackY(laneY + wiggle + pig.routeOffset * 0.16);
   }
 
   if (x >= MAZE_START_X && x < MAZE_END_X) {
@@ -593,6 +605,22 @@ function applyHazard(pig, hazard) {
       event(pig, "닫힌 문", "#d9b06f");
       burst(hazard.x, hazard.y, "#d9b06f", 8);
     }
+    return;
+  }
+
+  if (hazard.type === "punch") {
+    const dx = pig.x - hazard.x;
+    const dy = pig.y - hazard.y;
+    if (Math.abs(dx) > 46 || Math.abs(dy) > 52 || hazard.usedBy.has(pig.id)) return;
+    hazard.usedBy.add(pig.id);
+    pig.x = Math.min(pig.x, hazard.x - 36);
+    pig.vx = -randomRange(210, 330);
+    pig.vy += Math.sign(dy || randomRange(-1, 1)) * randomRange(120, 220);
+    pig.recoilTimer = 0.58;
+    pig.flipTimer = 0.65;
+    startRoll(pig, { nx: -1, ny: Math.sign(dy || 1) * 0.25 }, 0.9);
+    event(pig, "펀치!", "#ff4c4c");
+    burst(hazard.x, hazard.y, "#ff4c4c", 16);
     return;
   }
 
@@ -1202,6 +1230,12 @@ function drawInsertedTestSection() {
     roundRect(TEST_INSERT_X, TRACK_TOP + 56, testInsertLength, TRACK_BOTTOM - TRACK_TOP - 112, 8);
     ctx.fill();
   }
+
+  if (testSectionKey === "punchZone") {
+    ctx.fillStyle = "rgba(255, 226, 190, 0.3)";
+    roundRect(TEST_INSERT_X, TRACK_TOP + 34, testInsertLength, TRACK_BOTTOM - TRACK_TOP - 68, 8);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -1233,6 +1267,10 @@ function drawDiamondField() {
 function drawExtendedCourseFields() {
   const center = COURSE_CENTER;
   ctx.save();
+
+  ctx.fillStyle = "rgba(255, 226, 190, 0.24)";
+  roundRect(PUNCH_START_X, TRACK_TOP + 34, PUNCH_END_X - PUNCH_START_X, TRACK_BOTTOM - TRACK_TOP - 68, 8);
+  ctx.fill();
 
   ctx.fillStyle = "rgba(104, 184, 86, 0.42)";
   roundRect(MAZE_START_X - 28, TRACK_TOP + 52, MAZE_END_X - MAZE_START_X + 56, TRACK_BOTTOM - TRACK_TOP - 104, 8);
@@ -1378,6 +1416,7 @@ function drawHazards() {
     if (hazard.type === "bar") drawBoingBar(hazard);
     if (hazard.type === "bumper") drawBumper(hazard);
     if (hazard.type === "mud") drawMud(hazard);
+    if (hazard.type === "punch") drawPunch(hazard);
     if (hazard.type === "spring") drawSpring(hazard);
     if (hazard.type === "flipper") drawAutoFlipper(hazard);
     if (hazard.type === "feed") drawFeed(hazard);
@@ -1501,6 +1540,49 @@ function drawMud(h) {
   ctx.beginPath();
   ctx.ellipse(h.x, h.y, 38, 20, 0.08, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function punchProgress(h) {
+  return 0.5 + Math.sin(elapsed * 5.2 + h.phase) * 0.5;
+}
+
+function drawPunch(h) {
+  const pop = punchProgress(h);
+  const lift = 16 + pop * 34;
+  ctx.save();
+  ctx.fillStyle = "rgba(84, 48, 35, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(h.x, h.y + 31, 38, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#7b4a39";
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(h.x, h.y + 30);
+  ctx.lineTo(h.x, h.y + 10 - lift);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#f5c14f";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  for (let i = 0; i < 4; i += 1) {
+    const x = h.x - 14 + i * 9;
+    ctx.lineTo(x, h.y + 24 - lift * 0.52 + (i % 2 ? 8 : -8));
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = "#e33d3d";
+  roundRect(h.x - 34, h.y - 20 - lift, 68, 30, 10);
+  ctx.fill();
+  ctx.fillStyle = "#ff8a80";
+  roundRect(h.x - 24, h.y - 15 - lift, 26, 10, 5);
+  ctx.fill();
+  ctx.fillStyle = "#fff4e8";
+  ctx.font = "900 12px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("펀치", h.x, h.y + 2 - lift);
+  ctx.restore();
 }
 
 function drawSpring(h) {
