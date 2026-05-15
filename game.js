@@ -613,6 +613,7 @@ function applyHazard(pig, hazard) {
     const dy = pig.y - hazard.y;
     if (Math.abs(dx) > 46 || Math.abs(dy) > 52 || hazard.usedBy.has(pig.id)) return;
     hazard.usedBy.add(pig.id);
+    hazard.punchStart = elapsed - 0.12;
     pig.x = Math.min(pig.x, hazard.x - 36);
     pig.vx = -randomRange(210, 330);
     pig.vy += Math.sign(dy || randomRange(-1, 1)) * randomRange(120, 220);
@@ -1543,45 +1544,75 @@ function drawMud(h) {
 }
 
 function punchProgress(h) {
-  return 0.5 + Math.sin(elapsed * 5.2 + h.phase) * 0.5;
+  if (h.punchStart == null) return 0;
+  const t = (elapsed - h.punchStart) / 0.58;
+  if (t <= 0 || t >= 1) return 0;
+  if (t < 0.24) return t / 0.24;
+  if (t < 0.62) return 1;
+  return (1 - t) / 0.38;
 }
 
 function drawPunch(h) {
   const pop = punchProgress(h);
-  const lift = 16 + pop * 34;
+  const open = Math.min(1, pop * 1.35);
+  const reach = pop * 62;
   ctx.save();
-  ctx.fillStyle = "rgba(84, 48, 35, 0.22)";
+
+  ctx.fillStyle = "rgba(84, 48, 35, 0.24)";
   ctx.beginPath();
-  ctx.ellipse(h.x, h.y + 31, 38, 9, 0, 0, Math.PI * 2);
+  ctx.ellipse(h.x, h.y + 29, 43, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#7b4a39";
-  ctx.lineWidth = 8;
-  ctx.lineCap = "round";
+  ctx.fillStyle = "#4d3328";
+  roundRect(h.x - 39, h.y + 10, 78, 28, 8);
+  ctx.fill();
+
+  ctx.fillStyle = "#65bd57";
+  roundRect(h.x - 39 - open * 28, h.y + 8 - open * 5, 36, 30, 6);
+  ctx.fill();
+  roundRect(h.x + 3 + open * 28, h.y + 8 - open * 5, 36, 30, 6);
+  ctx.fill();
+
+  ctx.strokeStyle = "#3e7e39";
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(h.x, h.y + 30);
-  ctx.lineTo(h.x, h.y + 10 - lift);
+  ctx.moveTo(h.x - 3 - open * 28, h.y + 12);
+  ctx.lineTo(h.x - 3 - open * 28, h.y + 34);
+  ctx.moveTo(h.x + 3 + open * 28, h.y + 12);
+  ctx.lineTo(h.x + 3 + open * 28, h.y + 34);
   ctx.stroke();
 
-  ctx.strokeStyle = "#f5c14f";
-  ctx.lineWidth = 5;
+  if (pop < 0.06) {
+    ctx.restore();
+    return;
+  }
+
+  const springStartX = h.x + 22;
+  const springEndX = h.x - 19 - reach;
+  const springY = h.y + 20;
+  ctx.strokeStyle = "#f1c84d";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
   ctx.beginPath();
-  for (let i = 0; i < 4; i += 1) {
-    const x = h.x - 14 + i * 9;
-    ctx.lineTo(x, h.y + 24 - lift * 0.52 + (i % 2 ? 8 : -8));
+  for (let i = 0; i <= 8; i += 1) {
+    const ratio = i / 8;
+    const x = springStartX + (springEndX - springStartX) * ratio;
+    const y = springY + (i % 2 ? -10 : 10) * pop;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   }
   ctx.stroke();
 
   ctx.fillStyle = "#e33d3d";
-  roundRect(h.x - 34, h.y - 20 - lift, 68, 30, 10);
+  roundRect(springEndX - 43, h.y + 2, 48, 38, 12);
   ctx.fill();
   ctx.fillStyle = "#ff8a80";
-  roundRect(h.x - 24, h.y - 15 - lift, 26, 10, 5);
+  roundRect(springEndX - 34, h.y + 8, 17, 10, 5);
   ctx.fill();
   ctx.fillStyle = "#fff4e8";
   ctx.font = "900 12px system-ui";
   ctx.textAlign = "center";
-  ctx.fillText("펀치", h.x, h.y + 2 - lift);
+  ctx.fillText("펀치", springEndX - 19, h.y + 27);
   ctx.restore();
 }
 
