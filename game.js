@@ -42,8 +42,6 @@ const FUNNEL_END_X = 1500;
 const ZIGZAG_START_X = 1750;
 const CORRIDOR_HALF = 66;
 const BOTTLENECK_END_X = 3000;
-const PUNCH_START_X = 3000;
-const PUNCH_END_X = 3500;
 const MAZE_START_X = 3500;
 const MAZE_END_X = 5000;
 const CHOICE_START_X = 5500;
@@ -57,7 +55,6 @@ const trackSections = {
   giantWindmill: { name: "대왕풍차", startX: 500, endX: 1000 },
   diamondJunction: { name: "마름모 교차로", startX: 1000, endX: 1500 },
   zigzagWindmills: { name: "지그재그 풍차", startX: ZIGZAG_START_X, endX: BOTTLENECK_END_X },
-  punchZone: { name: "스프링 펀치", startX: PUNCH_START_X, endX: PUNCH_END_X },
   mazePath: { name: "울타리 미로", startX: MAZE_START_X, endX: MAZE_END_X },
   splitLanes: { name: "삼갈래 선택길", startX: CHOICE_START_X, endX: CHOICE_END_X },
   finalGates: { name: "결승 게이트", startX: CHOICE_END_X, endX: FINISH_X },
@@ -72,7 +69,6 @@ const sectionAliases = {
   giant: "giantWindmill",
   diamond: "diamondJunction",
   zigzag: "zigzagWindmills",
-  punch: "punchZone",
   maze: "mazePath",
   split: "splitLanes",
   gate: "finalGates",
@@ -358,11 +354,6 @@ function baseHazards() {
       r: 34,
       usedBy: new Set(),
     },
-    { type: "punch", section: "punchZone", x: 3050, y: COURSE_CENTER - 180, r: 44, phase: 0.1, usedBy: new Set() },
-    { type: "punch", section: "punchZone", x: 3150, y: COURSE_CENTER, r: 44, phase: 0.6, usedBy: new Set() },
-    { type: "punch", section: "punchZone", x: 3250, y: COURSE_CENTER + 180, r: 44, phase: 1.1, usedBy: new Set() },
-    { type: "punch", section: "punchZone", x: 3350, y: COURSE_CENTER - 90, r: 44, phase: 1.6, usedBy: new Set() },
-    { type: "punch", section: "punchZone", x: 3450, y: COURSE_CENTER + 90, r: 44, phase: 2.1, usedBy: new Set() },
     { type: "spring", section: "splitLanes", x: 6250, y: COURSE_CENTER, r: 36, phase: 0.7, usedBy: new Set() },
     { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER - FINAL_GATE_OFFSET, phase: 0.2, usedBy: new Set() },
     { type: "gate", section: "finalGates", x: FINAL_GATE_X, y: COURSE_CENTER, phase: 1.7, usedBy: new Set() },
@@ -530,10 +521,7 @@ function chooseTargetY(pig) {
   }
 
   if (x >= BOTTLENECK_END_X && x < MAZE_START_X) {
-    const lane = pig.index % 3;
-    const laneY = lane === 0 ? center - 180 : lane === 1 ? center : center + 180;
-    const wiggle = Math.sin((x - PUNCH_START_X) / 115 + pig.index) * 16;
-    return clampTrackY(laneY + wiggle + pig.routeOffset * 0.16);
+    return clampTrackY(center - MAZE_ROUTE_OFFSET * 0.85 + pig.routeOffset * 0.2);
   }
 
   if (x >= MAZE_START_X && x < MAZE_END_X) {
@@ -605,24 +593,6 @@ function applyHazard(pig, hazard) {
       event(pig, "닫힌 문", "#d9b06f");
       burst(hazard.x, hazard.y, "#d9b06f", 8);
     }
-    return;
-  }
-
-  if (hazard.type === "punch") {
-    const dx = pig.x - hazard.x;
-    const dy = pig.y - hazard.y;
-    if (Math.abs(dx) > 46 || Math.abs(dy) > 52 || hazard.usedBy.has(pig.id)) return;
-    hazard.usedBy.add(pig.id);
-    hazard.punchStart = elapsed - 0.12;
-    pig.x = Math.min(pig.x, hazard.x - 40);
-    pig.y = Math.max(TRACK_TOP + PIG_RADIUS, pig.y - 8);
-    pig.vx = -randomRange(245, 370);
-    pig.vy = -randomRange(260, 390) + Math.sign(dy || randomRange(-1, 1)) * randomRange(30, 90);
-    pig.recoilTimer = 0.7;
-    pig.flipTimer = 0.86;
-    startRoll(pig, { nx: -0.75, ny: -0.66 }, 1.08);
-    event(pig, "펀치!", "#ff4c4c");
-    burst(hazard.x, hazard.y, "#ff4c4c", 16);
     return;
   }
 
@@ -1233,11 +1203,6 @@ function drawInsertedTestSection() {
     ctx.fill();
   }
 
-  if (testSectionKey === "punchZone") {
-    ctx.fillStyle = "rgba(255, 226, 190, 0.3)";
-    roundRect(TEST_INSERT_X, TRACK_TOP + 34, testInsertLength, TRACK_BOTTOM - TRACK_TOP - 68, 8);
-    ctx.fill();
-  }
   ctx.restore();
 }
 
@@ -1269,10 +1234,6 @@ function drawDiamondField() {
 function drawExtendedCourseFields() {
   const center = COURSE_CENTER;
   ctx.save();
-
-  ctx.fillStyle = "rgba(255, 226, 190, 0.24)";
-  roundRect(PUNCH_START_X, TRACK_TOP + 34, PUNCH_END_X - PUNCH_START_X, TRACK_BOTTOM - TRACK_TOP - 68, 8);
-  ctx.fill();
 
   ctx.fillStyle = "rgba(104, 184, 86, 0.42)";
   roundRect(MAZE_START_X - 28, TRACK_TOP + 52, MAZE_END_X - MAZE_START_X + 56, TRACK_BOTTOM - TRACK_TOP - 104, 8);
@@ -1418,7 +1379,6 @@ function drawHazards() {
     if (hazard.type === "bar") drawBoingBar(hazard);
     if (hazard.type === "bumper") drawBumper(hazard);
     if (hazard.type === "mud") drawMud(hazard);
-    if (hazard.type === "punch") drawPunch(hazard);
     if (hazard.type === "spring") drawSpring(hazard);
     if (hazard.type === "flipper") drawAutoFlipper(hazard);
     if (hazard.type === "feed") drawFeed(hazard);
@@ -1542,141 +1502,6 @@ function drawMud(h) {
   ctx.beginPath();
   ctx.ellipse(h.x, h.y, 38, 20, 0.08, 0, Math.PI * 2);
   ctx.fill();
-}
-
-function punchProgress(h) {
-  if (h.punchStart == null) return 0;
-  const t = (elapsed - h.punchStart) / 0.58;
-  if (t <= 0 || t >= 1) return 0;
-  if (t < 0.24) return t / 0.24;
-  if (t < 0.62) return 1;
-  return (1 - t) / 0.38;
-}
-
-function drawPunch(h) {
-  const pop = punchProgress(h);
-  const burstOpen = Math.min(1, pop * 1.6);
-  const reach = pop * 78;
-  const angle = -0.48;
-  const baseY = h.y + 24;
-  ctx.save();
-
-  ctx.fillStyle = "rgba(51, 34, 23, 0.26)";
-  ctx.beginPath();
-  ctx.ellipse(h.x, baseY + 13, 55, 13, -0.05, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#463024";
-  ctx.beginPath();
-  ctx.ellipse(h.x, baseY, 46, 22, -0.08, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#6b4a32";
-  [
-    [h.x - 30, baseY + 4, 13],
-    [h.x - 12, baseY + 10, 11],
-    [h.x + 12, baseY + 9, 12],
-    [h.x + 31, baseY + 3, 14],
-  ].forEach(([x, y, r]) => {
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  ctx.fillStyle = "#5fb653";
-  ctx.beginPath();
-  ctx.moveTo(h.x - 44 - burstOpen * 16, baseY - 17 - burstOpen * 12);
-  ctx.quadraticCurveTo(h.x - 22 - burstOpen * 27, baseY - 31 - burstOpen * 10, h.x - 5 - burstOpen * 9, baseY - 8);
-  ctx.lineTo(h.x - 13 - burstOpen * 18, baseY + 14);
-  ctx.quadraticCurveTo(h.x - 34 - burstOpen * 12, baseY + 17, h.x - 48 - burstOpen * 5, baseY + 2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#6ac45b";
-  ctx.beginPath();
-  ctx.moveTo(h.x + 44 + burstOpen * 16, baseY - 17 - burstOpen * 12);
-  ctx.quadraticCurveTo(h.x + 22 + burstOpen * 27, baseY - 31 - burstOpen * 10, h.x + 5 + burstOpen * 9, baseY - 8);
-  ctx.lineTo(h.x + 13 + burstOpen * 18, baseY + 14);
-  ctx.quadraticCurveTo(h.x + 34 + burstOpen * 12, baseY + 17, h.x + 48 + burstOpen * 5, baseY + 2);
-  ctx.closePath();
-  ctx.fill();
-
-  if (pop > 0.08) {
-    for (let i = 0; i < 13; i += 1) {
-      const side = i % 2 ? 1 : -1;
-      const scatter = 18 + i * 4.4;
-      const lift = pop * (18 + (i % 5) * 8);
-      const x = h.x + side * scatter * pop + Math.sin(i * 1.7 + h.phase) * 7;
-      const y = baseY - lift + Math.cos(i * 2.1 + h.phase) * 5;
-      ctx.fillStyle = i % 3 === 0 ? "#3f7c36" : "#6b4a32";
-      ctx.beginPath();
-      ctx.ellipse(x, y, 3 + (i % 4), 2 + (i % 3), i * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  if (pop < 0.06) {
-    ctx.restore();
-    return;
-  }
-
-  ctx.translate(h.x, baseY - 2);
-  ctx.rotate(angle);
-  ctx.translate(-h.x, -(baseY - 2));
-
-  const springStartX = h.x + 18;
-  const springEndX = h.x - 28 - reach;
-  const springY = baseY - 2;
-
-  ctx.strokeStyle = "#1f241d";
-  ctx.lineWidth = 9;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  for (let i = 0; i <= 11; i += 1) {
-    const ratio = i / 11;
-    const x = springStartX + (springEndX - springStartX) * ratio;
-    const y = springY + (i % 2 ? -12 : 12) * pop;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  ctx.strokeStyle = "#aeb4a4";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  for (let i = 0; i <= 11; i += 1) {
-    const ratio = i / 11;
-    const x = springStartX + (springEndX - springStartX) * ratio;
-    const y = springY + (i % 2 ? -10 : 10) * pop;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  ctx.fillStyle = "#b72622";
-  roundRect(springEndX - 17, baseY - 22, 18, 43, 8);
-  ctx.fill();
-
-  const gloveX = springEndX - 44;
-  const gloveY = baseY - 3;
-  ctx.fillStyle = "#8f1715";
-  ctx.beginPath();
-  ctx.ellipse(gloveX + 4, gloveY + 13, 27, 19, -0.25, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#c63830";
-  ctx.beginPath();
-  ctx.ellipse(gloveX, gloveY - 5, 28, 25, -0.18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#d94b41";
-  ctx.beginPath();
-  ctx.ellipse(gloveX - 9, gloveY - 11, 12, 8, -0.35, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#64110f";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(gloveX + 9, gloveY + 1, 15, -1.2, 1.05);
-  ctx.stroke();
-  ctx.restore();
 }
 
 function drawSpring(h) {
