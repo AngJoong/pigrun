@@ -49,7 +49,7 @@ const CHOICE_END_X = 7000;
 const FINAL_GATE_X = 7500;
 const COURSE_UNIT_WIDTH = 100;
 const MAJOR_UNIT_EVERY = 5;
-const TEST_INSERT_X = START_X;
+const TEST_INSERT_X = 500;
 
 const trackSections = {
   giantWindmill: { name: "대왕풍차", startX: 500, endX: 1000 },
@@ -110,7 +110,23 @@ function isInTestInsert(x) {
 }
 
 function toSourceX(x) {
-  return isInTestInsert(x) ? x - testInsertShift : x;
+  if (!testSection) return x;
+  if (x < TEST_INSERT_X) return x;
+  if (x < testInsertEndX) return x - testInsertShift;
+  return x - testInsertLength;
+}
+
+function toDisplayX(x) {
+  if (!testSection || x < TEST_INSERT_X) return x;
+  return x + testInsertLength;
+}
+
+function effectiveFinishX() {
+  return FINISH_X + testInsertLength;
+}
+
+function effectiveWorldWidth() {
+  return WORLD_WIDTH + testInsertLength;
 }
 
 function shiftedSegment(segment, shift) {
@@ -122,7 +138,7 @@ function shiftedHazard(hazard, shift) {
 }
 
 function isOriginalRangeVisible(startX, endX) {
-  return !testSection || startX > testInsertEndX + 120 || endX < TEST_INSERT_X - 120;
+  return true;
 }
 
 function shuffle(list) {
@@ -352,7 +368,7 @@ function makeHazards(total) {
   const inserted = normalHazards
     .filter((hazard) => hazard.section === testSectionKey)
     .map((hazard) => shiftedHazard(hazard, testInsertShift));
-  const visibleNormal = normalHazards.filter((hazard) => hazard.x > testInsertEndX + 120);
+  const visibleNormal = normalHazards.map((hazard) => (hazard.x >= TEST_INSERT_X ? shiftedHazard(hazard, testInsertLength) : hazard));
   return [...inserted, ...visibleNormal];
 }
 
@@ -923,7 +939,9 @@ function courseFenceSegments() {
       return minX >= testSection.startX - 1 && maxX <= testSection.endX + 1;
     })
     .map((segment) => shiftedSegment(segment, testInsertShift));
-  const visibleNormal = segments.filter((segment) => Math.min(segment.x1, segment.x2) > testInsertEndX + 120);
+  const visibleNormal = segments.map((segment) =>
+    Math.min(segment.x1, segment.x2) >= TEST_INSERT_X ? shiftedSegment(segment, testInsertLength) : segment
+  );
   return [...inserted, ...visibleNormal];
 }
 
@@ -1017,14 +1035,14 @@ function applyRouletteWalls(pig) {
 
 function updateCamera(dt) {
   const leadX = Math.max(...pigs.map((pig) => pig.x));
-  const target = Math.max(0, Math.min(WORLD_WIDTH - W, leadX - W * 0.62));
+  const target = Math.max(0, Math.min(effectiveWorldWidth() - W, leadX - W * 0.62));
   cameraX += (target - cameraX) * Math.min(1, dt * 2.5);
 }
 
 function checkWinner() {
   if (winner) return;
   const finished = pigs
-    .filter((pig) => pig.x >= FINISH_X)
+    .filter((pig) => pig.x >= effectiveFinishX())
     .sort((a, b) => b.x - a.x);
   if (!finished.length) return;
 
@@ -1043,7 +1061,7 @@ function updateLeaderboard() {
   leaderboard.innerHTML = "";
   ordered.forEach((pig) => {
     const li = document.createElement("li");
-    const distance = Math.max(0, FINISH_X - pig.x);
+    const distance = Math.max(0, effectiveFinishX() - pig.x);
     li.textContent = `${pig.bib}번 ${pig.label} · ${Math.round(distance)}m`;
     leaderboard.append(li);
   });
@@ -1069,26 +1087,29 @@ function drawWorld() {
   ctx.fillRect(cameraX, 0, W, TRACK_TOP);
 
   ctx.fillStyle = "#73cf69";
-  ctx.fillRect(0, TRACK_TOP, WORLD_WIDTH, TRACK_BOTTOM - TRACK_TOP);
+  ctx.fillRect(0, TRACK_TOP, effectiveWorldWidth(), TRACK_BOTTOM - TRACK_TOP);
   ctx.fillStyle = "#7c5947";
-  ctx.fillRect(0, TRACK_BOTTOM, WORLD_WIDTH, H - TRACK_BOTTOM);
+  ctx.fillRect(0, TRACK_BOTTOM, effectiveWorldWidth(), H - TRACK_BOTTOM);
 
   for (let i = 0; i < GUIDE_LANE_COUNT; i += 1) {
     const lane = laneBounds(i, GUIDE_LANE_COUNT);
     ctx.fillStyle = laneColors[i % laneColors.length];
-    ctx.fillRect(0, lane.top, WORLD_WIDTH, lane.height);
+    ctx.fillRect(0, lane.top, effectiveWorldWidth(), lane.height);
     ctx.strokeStyle = "rgba(255,255,255,0.68)";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, lane.bottom);
-    ctx.lineTo(WORLD_WIDTH, lane.bottom);
+    ctx.lineTo(effectiveWorldWidth(), lane.bottom);
     ctx.stroke();
   }
 
   drawBarn(142, 38);
   drawInsertedTestSection();
+  ctx.save();
+  if (testSection) ctx.translate(testInsertLength, 0);
   drawDiamondField();
   drawExtendedCourseFields();
+  ctx.restore();
   drawCourseFences();
   drawSectionGuides();
   drawFinishLine();
@@ -1127,7 +1148,7 @@ function drawSectionGuides() {
   const lastUnit = Math.ceil((cameraX + W) / COURSE_UNIT_WIDTH) + 1;
   for (let unit = firstUnit; unit <= lastUnit; unit += 1) {
     const x = unit * COURSE_UNIT_WIDTH;
-    if (x < START_X || x > FINISH_X) continue;
+    if (x < START_X || x > effectiveFinishX()) continue;
     const isMajor = unit % MAJOR_UNIT_EVERY === 0;
     ctx.lineWidth = isMajor ? 1.5 : 1;
     ctx.setLineDash(isMajor ? [] : [4, 8]);
@@ -1302,16 +1323,17 @@ function drawBarn(x, y) {
 }
 
 function drawFinishLine() {
+  const finishX = effectiveFinishX();
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(FINISH_X, TRACK_TOP - 34, 16, TRACK_BOTTOM - TRACK_TOP + 50);
+  ctx.fillRect(finishX, TRACK_TOP - 34, 16, TRACK_BOTTOM - TRACK_TOP + 50);
   ctx.fillStyle = "#202020";
   for (let y = TRACK_TOP - 30; y < TRACK_BOTTOM + 22; y += 28) {
-    ctx.fillRect(FINISH_X, y, 16, 14);
+    ctx.fillRect(finishX, y, 16, 14);
   }
   ctx.fillStyle = "#202020";
   ctx.font = "900 24px system-ui";
   ctx.textAlign = "center";
-  ctx.fillText("FINISH", FINISH_X + 8, TRACK_TOP - 48);
+  ctx.fillText("FINISH", finishX + 8, TRACK_TOP - 48);
 }
 
 function drawRouletteWalls() {
